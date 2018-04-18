@@ -103,7 +103,6 @@ static void lora_work_func(struct work_struct *w)
     
 }
 
-
 /*
  * We can't use the standard synchronous wrappers for file I/O; we
  * need to protect against async removal of the underlying spi_device.
@@ -603,9 +602,158 @@ irqreturn_t SX1278_OnDio4Irq(int irq, void *dev_id);
 /*!
  * Hardware DIO IRQ callback initialization
  */
-DioIrqHandler *DioIrq[] = { SX1278_OnDio0Irq, SX1278_OnDio1Irq,
-                            SX1278_OnDio2Irq, SX1278_OnDio3Irq,
-                            SX1278_OnDio4Irq, NULL };
+
+int lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int result = 0;
+    
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+    
+    gpio_request(sx1278_gpio_ptr->DIO0, "DIO0");
+    gpio_request(sx1278_gpio_ptr->DIO1, "DIO1");
+    gpio_request(sx1278_gpio_ptr->DIO2, "DIO2");
+    gpio_request(sx1278_gpio_ptr->DIO3, "DIO3");
+    gpio_request(sx1278_gpio_ptr->DIO4, "DIO4");
+    gpio_request(sx1278_gpio_ptr->Reset, "RESET");
+
+    gpio_direction_input(sx1278_gpio_ptr->DIO0);
+    gpio_direction_input(sx1278_gpio_ptr->DIO1);
+    gpio_direction_input(sx1278_gpio_ptr->DIO2);
+    gpio_direction_input(sx1278_gpio_ptr->DIO3);
+    gpio_direction_input(sx1278_gpio_ptr->DIO4);
+    gpio_direction_output(sx1278_gpio_ptr->Reset, 1);
+
+ERR_EXIT:
+    
+    return result;
+}
+
+int lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int irq = 0;
+    int result = 0;
+
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT0;
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO0);
+    result = request_irq(irq , SX1278_OnDio0Irq, IRQF_TRIGGER_RISING, "DI0_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        ret = -EFAULT;
+        goto ERR_EXIT0; 
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO1);
+    result = request_irq(irq , SX1278_OnDio1Irq, IRQF_TRIGGER_RISING, "DI1_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        ret = -EFAULT;
+        goto ERR_EXIT1; 
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO2);
+    result = request_irq(irq , SX1278_OnDio2Irq, IRQF_TRIGGER_RISING, "DI2_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        ret = -EFAULT;
+        goto ERR_EXIT2; 
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO3);
+    result = request_irq(irq , SX1278_OnDio3Irq, IRQF_TRIGGER_RISING, "DI3_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        ret = -EFAULT;
+        goto ERR_EXIT3; 
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO4);
+    result = request_irq(irq , SX1278_OnDio4Irq, IRQF_TRIGGER_RISING, "DI4_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        ret = -EFAULT;
+        goto ERR_EXIT4; 
+    }
+
+    return result;
+
+ERR_EXIT4:
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO3);
+    free_irq(irq, NULL);    
+ERR_EXIT3:
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO2);
+    free_irq(irq, NULL);
+ERR_EXIT2:
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO1);
+    free_irq(irq, NULL);
+ERR_EXIT1:
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO0);
+    free_irq(irq, NULL);
+ERR_EXIT0:
+    return result;
+}
+
+int lora_IoDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int result = 0;
+
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+
+    gpio_free(sx1278_gpio_ptr->DIO0);
+    gpio_free(sx1278_gpio_ptr->DIO1);
+    gpio_free(sx1278_gpio_ptr->DIO2);
+    gpio_free(sx1278_gpio_ptr->DIO3);
+    gpio_free(sx1278_gpio_ptr->DIO4);
+    gpio_free(sx1278_gpio_ptr->Reset);
+
+ERR_EXIT:
+
+    return result;
+}
+
+int lora_Reset(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int result = 0;
+
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+
+    // Set RESET pin to 0
+    gpio_direction_output(sx1278_gpio_ptr->Reset, 0);
+
+    // Wait 1 ms
+    mdelay(1);
+
+    // Configure RESET as input
+    gpio_direction_input(sx1278_gpio_ptr->Reset);
+
+    // Wait 6 ms
+    mdelay(6);
+
+ERR_EXIT:
+
+    return result;
+}
 
 
 static int drv_probe(struct spi_device *spi)
