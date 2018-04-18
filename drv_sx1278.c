@@ -19,9 +19,7 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/err.h>
-#include <linux/list.h>
 #include <linux/errno.h>
-#include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/compat.h>
 #include <linux/of.h>
@@ -29,9 +27,8 @@
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
 #include <linux/of_irq.h>
-#include <linux/spi/spi.h>
-#include <linux/spi/spidev.h>
-
+#include <linux/irqreturn.h>
+#include <linux/interrupt.h>
 #include <linux/uaccess.h>
 #include "drv_sx1278.h"
 /*
@@ -47,6 +44,8 @@
  * nodes, since there is no fixed association of minor numbers with any
  * particular SPI bus or device.
  */
+#define RSSI_OFFSET_LF                              -164
+#define RSSI_OFFSET_HF                              -157
 #define N_SPI_MINORS    32
 
 //驱动名
@@ -89,20 +88,109 @@ static dev_t drv_dev_num = MKDEV(DRV_MAJOR, 0);
 static struct cdev drv_cdev;
 static struct class *drv_class;
 
+static drv_info_st drv_info;
 
 static unsigned bufsiz = 4096;
+
+extern RadioRegisters_t RadioRegsInit[];
+
 module_param(bufsiz, uint, S_IRUGO);
 MODULE_PARM_DESC(bufsiz, "data bytes in biggest supported SPI message");
 
+int Lora_Reset(SX1278_Gpio_st_ptr sx1278_gpio_ptr);
+
+int Lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr);
+
+int Lora_IoDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr);
+
+int Lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr);
+
+int Lora_IoIrqDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr);
 
 static void lora_work_func(struct work_struct *w)
 {
-    //send mode
+    uint8_t i,val = 0;
+    switch( drv_info.sx1278_cfg.State )
+    {
+    case RF_RX_RUNNING:
+        if( drv_info.sx1278_cfg.Modem == MODEM_FSK )
+        {
+            drv_info.sx1278_cfg.FskPacketHandler.PreambleDetected = false;
+            drv_info.sx1278_cfg.FskPacketHandler.SyncWordDetected = false;
+            drv_info.sx1278_cfg.FskPacketHandler.NbBytes = 0;
+            drv_info.sx1278_cfg.FskPacketHandler.Size = 0;
 
-    //recv mode
-    
+            // Clear Irqs
+            SX1278_Write_Reg( REG_IRQFLAGS1, RF_IRQFLAGS1_RSSI |
+                                        RF_IRQFLAGS1_PREAMBLEDETECT |
+                                        RF_IRQFLAGS1_SYNCADDRESSMATCH );
+            SX1278_Write_Reg( REG_IRQFLAGS2, RF_IRQFLAGS2_FIFOOVERRUN );
+
+            if( drv_info.sx1278_cfg.Fsk.RxContinuous == true )
+            {
+                // Continuous mode restart Rx chain
+                SX1278_Read_Reg( REG_RXCONFIG, &val);
+                SX1278_Write_Reg( REG_RXCONFIG, val | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK );
+                //TimerStart( &RxTimeoutSyncWord );
+            }
+            else
+            {
+                drv_info.sx1278_cfg.State = RF_IDLE;
+                //TimerStop( &RxTimeoutSyncWord );
+            }
+        }
+        /*
+        if( ( RadioEvents != NULL ) && ( RadioEvents->RxTimeout != NULL ) )
+        {
+            RadioEvents->RxTimeout( );
+        }
+        */
+        break;
+    case RF_TX_RUNNING:
+        // Tx timeout shouldn't happen.
+        // But it has been observed that when it happens it is a result of a corrupted SPI transfer
+        // it depends on the platform design.
+        //
+        // The workaround is to put the radio in a known state. Thus, we re-initialize it.
+
+        // BEGIN WORKAROUND
+
+        // Reset the radio
+        Lora_Reset(&drv_info.sx2178_gpio);
+
+        // Calibrate Rx chain
+        RxChainCalibration( );
+
+        // Initialize radio default values
+        SX1278SetOpMode( RF_OPMODE_SLEEP );
+
+        for( i = 0; i < sizeof( RadioRegsInit ) / sizeof( RadioRegisters_t ); i++ )
+        {
+            SX1278SetModem( RadioRegsInit[i].Modem );
+            SX1278_Write_Reg( RadioRegsInit[i].Addr, RadioRegsInit[i].Value );
+        }
+        
+        SX1278SetModem( MODEM_FSK );
+
+        // Restore previous network type setting.
+        SX1278SetPublicNetwork( drv_info.sx1278_cfg.PublicNetwork );
+        // END WORKAROUND
+
+        drv_info.sx1278_cfg.State = RF_IDLE;
+        drv_info.flag = 1;
+        complete(drv_info.lora_complete);
+        /*
+        if( ( RadioEvents != NULL ) && ( RadioEvents->TxTimeout != NULL ) )
+        {
+            RadioEvents->TxTimeout( );
+        }
+        */
+        break;
+    default:
+        break;
+    }
+
 }
-
 
 /*
  * We can't use the standard synchronous wrappers for file I/O; we
@@ -121,12 +209,12 @@ static ssize_t spidev_sync(drv_info_st_ptr drv_info_ptr, struct spi_message *mes
 	message->complete = spidev_complete;
 	message->context = &done;
 
-	spin_lock_irq(&drv_info_ptr->spi_lock);
-	if (drv_info_ptr->spi == NULL)
+	spin_lock_irq(&drv_info.spi_lock);
+	if (drv_info.spi == NULL)
 		status = -ESHUTDOWN;
 	else
-		status = spi_async(drv_info_ptr->spi, message);
-	spin_unlock_irq(&drv_info_ptr->spi_lock);
+		status = spi_async(drv_info.spi, message);
+	spin_unlock_irq(&drv_info.spi_lock);
 
 	if (status == 0) {
 		wait_for_completion(&done);
@@ -140,7 +228,7 @@ static ssize_t spidev_sync(drv_info_st_ptr drv_info_ptr, struct spi_message *mes
 static inline ssize_t spidev_sync_write(drv_info_st_ptr drv_info_ptr, size_t len)
 {
 	struct spi_transfer	t = {
-			.tx_buf		= drv_info_ptr->buffer,
+			.tx_buf		= drv_info.buffer,
 			.len		= len,
 		};
 	struct spi_message	m;
@@ -153,7 +241,7 @@ static inline ssize_t spidev_sync_write(drv_info_st_ptr drv_info_ptr, size_t len
 static inline ssize_t spidev_sync_read(drv_info_st_ptr drv_info_ptr, size_t len)
 {
 	struct spi_transfer	t = {
-			.rx_buf		= drv_info_ptr->buffer,
+			.rx_buf		= drv_info.buffer,
 			.len		= len,
 		};
 	struct spi_message	m;
@@ -166,57 +254,109 @@ static inline ssize_t spidev_sync_read(drv_info_st_ptr drv_info_ptr, size_t len)
 /* Read-only message with current device setup */
 static ssize_t drv_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-	drv_info_st_ptr	drv_info_ptr;
-	ssize_t			status = 0;
+    int result = 0;
+	//drv_info_st_ptr	drv_info_ptr;
+	//ssize_t			status = 0;
 
 	/* chipselect only toggles at start or end of operation */
-	if (count > bufsiz)
-		return -EMSGSIZE;
+	//if (count > bufsiz)
+	//	return -EMSGSIZE;
 
-	drv_info_ptr = filp->private_data;
+	//drv_info_ptr = filp->private_data;
 
-	mutex_lock(&drv_info_ptr->buf_lock);
-	status = spidev_sync_read(drv_info_ptr, count);
-	if (status > 0) {
-		unsigned long	missing;
+	//mutex_lock(&drv_info.buf_lock);
+	//status = spidev_sync_read(drv_info_ptr, count);
+	//if (status > 0) {
+	//	unsigned long	missing;
 
-		missing = copy_to_user(buf, drv_info_ptr->buffer, status);
-		if (missing == status)
-			status = -EFAULT;
-		else
-			status = status - missing;
-	}
+	//	missing = copy_to_user(buf, drv_info.buffer, status);
+	//	if (missing == status)
+	//		status = -EFAULT;
+	//	else
+	//		status = status - missing;
+	//}
+	
+    mutex_lock(&drv_info.lora_mutex);
+    wait_event_interruptible(drv_info.lora_wq, drv_info.flag);
+    drv_info.flag = 0x00;
+    //set the mutex lock
+    drv_info.buffer = kzalloc(count, GFP_KERNEL);
     
-    wait_event_interruptible(drv_info_ptr->lora_wq, drv_info_ptr->flag);
-    drv_info_ptr->flag = 0x00;
+    SX1278Receive( drv_info.buffer, count);
+    cancel_delayed_work_sync(&drv_info.lora_work);
+    //read data
+    copy_to_user(buf, drv_info.buffer, result);
+    //set the mutex unlock
     
-	mutex_unlock(&drv_info_ptr->buf_lock);
-
-	return status;
+    
+    mutex_unlock(&drv_info.lora_mutex);
+  
+    return result;
 }
 
 /* Write-only message with current device setup */
 static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
-	drv_info_st_ptr	drv_info_ptr;
+    int result = 0;
+    uint32_t timeout = 0;
+	//drv_info_st_ptr	drv_info_ptr = NULL;
 	ssize_t			status = 0;
-	unsigned long		missing;
+	//unsigned long		missing;
 
 	/* chipselect only toggles at start or end of operation */
-	if (count > bufsiz)
-		return -EMSGSIZE;
+	//if (count > bufsiz)
+	//	return -EMSGSIZE;
 
-	drv_info_ptr = filp->private_data;
+	//drv_info_ptr = filp->private_data;
+    drv_info.buffer = kzalloc(count, GFP_KERNEL);
+    if(!drv_info.buffer)
+    {
+        goto ERR_EXIT;
+    }
 
-	mutex_lock(&drv_info_ptr->buf_lock);
-	missing = copy_from_user(drv_info_ptr->buffer, buf, count);
-	if (missing == 0)
-		status = spidev_sync_write(drv_info_ptr, count);
-	else
-		status = -EFAULT;
-	mutex_unlock(&drv_info_ptr->buf_lock);
+	mutex_lock(&drv_info.lora_mutex);
+	result = copy_from_user(drv_info.buffer, buf, count);
+	if (result == 0)
+    {
+        //result = spidev_sync_write(drv_info_ptr, count);
+        SX1278SetChannel(drv_info.sx1278_cfg.Channel);
 
-	return status;
+        SX1278SetTxConfig(MODEM_LORA, drv_info.sx1278_cfg.TxLoRa.Power, 0, \
+                                   drv_info.sx1278_cfg.TxLoRa.Bandwidth, drv_info.sx1278_cfg.TxLoRa.Datarate, \
+                                   drv_info.sx1278_cfg.TxLoRa.Coderate, drv_info.sx1278_cfg.TxLoRa.PreambleLen, \
+                                   drv_info.sx1278_cfg.TxLoRa.FixLen, drv_info.sx1278_cfg.TxLoRa.CrcOn, drv_info.sx1278_cfg.TxLoRa.FreqHopOn, \
+                                   drv_info.sx1278_cfg.TxLoRa.HopPeriod, drv_info.sx1278_cfg.TxLoRa.IqInverted, drv_info.sx1278_cfg.TxLoRa.TxTimeout);
+
+        //data split
+        SX1278Send(drv_info.buffer, count);
+
+        drv_info.sx1278_cfg.State = RF_TX_RUNNING;
+        //TimerStart( &TxTimeoutTimer );
+        timeout = drv_info.sx1278_cfg.TxLoRa.TxTimeout;
+        schedule_delayed_work(&drv_info.lora_work, timeout * HZ / 1000);
+        
+        SX1278SetOpMode( RF_OPMODE_TRANSMITTER );
+        
+        wait_for_completion(drv_info.lora_complete);
+
+        if(drv_info.flag)
+        {
+            result = -1;
+            drv_info.flag = 0;
+        }
+	}else{
+		result = -EFAULT;
+    }
+	mutex_unlock(&drv_info.lora_mutex);
+
+ERR_EXIT:
+
+    if(drv_info.buffer)
+    {
+        kfree(drv_info.buffer);
+    }
+    
+	return result;
 }
 
 static int spidev_message(drv_info_st_ptr drv_info_ptr, struct spi_ioc_transfer *u_xfers, unsigned n_xfers)
@@ -238,7 +378,7 @@ static int spidev_message(drv_info_st_ptr drv_info_ptr, struct spi_ioc_transfer 
 	 * We walk the array of user-provided transfers, using each one
 	 * to initialize a kernel version of the same transfer.
 	 */
-	buf = drv_info_ptr->buffer;
+	buf = drv_info.buffer;
 	total = 0;
 	for (n = n_xfers, k_tmp = k_xfers, u_tmp = u_xfers;
 			n;
@@ -281,9 +421,9 @@ static int spidev_message(drv_info_st_ptr drv_info_ptr, struct spi_ioc_transfer 
 			u_tmp->rx_buf ? "rx " : "",
 			u_tmp->tx_buf ? "tx " : "",
 			u_tmp->cs_change ? "cs " : "",
-			u_tmp->bits_per_word ? : drv_info_ptr->spi->bits_per_word,
+			u_tmp->bits_per_word ? : drv_info.spi->bits_per_word,
 			u_tmp->delay_usecs,
-			u_tmp->speed_hz ? : drv_info_ptr->spi->max_speed_hz);
+			u_tmp->speed_hz ? : drv_info.spi->max_speed_hz);
 #endif
 		spi_message_add_tail(k_tmp, &msg);
 	}
@@ -293,7 +433,7 @@ static int spidev_message(drv_info_st_ptr drv_info_ptr, struct spi_ioc_transfer 
 		goto done;
 
 	/* copy any rx data out of bounce buffer */
-	buf = drv_info_ptr->buffer;
+	buf = drv_info.buffer;
 	for (n = n_xfers, u_tmp = u_xfers; n; n--, u_tmp++) {
 		if (u_tmp->rx_buf) {
 			if (__copy_to_user((u8 __user *)
@@ -343,9 +483,9 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	 * we issue this ioctl.
 	 */
 	drv_info_ptr = filp->private_data;
-	spin_lock_irq(&drv_info_ptr->spi_lock);
-	spi = spi_dev_get(drv_info_ptr->spi);
-	spin_unlock_irq(&drv_info_ptr->spi_lock);
+	spin_lock_irq(&drv_info.spi_lock);
+	spi = spi_dev_get(drv_info.spi);
+	spin_unlock_irq(&drv_info.spi_lock);
 
 	if (spi == NULL)
 		return -ESHUTDOWN;
@@ -356,7 +496,7 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	 *    data fields while SPI_IOC_RD_* reads them;
 	 *  - SPI_IOC_MESSAGE needs the buffer locked "normally".
 	 */
-	mutex_lock(&drv_info_ptr->buf_lock);
+	mutex_lock(&drv_info.buf_lock);
 
 	switch (cmd) {
 	/* read requests */
@@ -474,7 +614,7 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	}
 
-	mutex_unlock(&drv_info_ptr->buf_lock);
+	mutex_unlock(&drv_info.buf_lock);
 	spi_dev_put(spi);
 	return retval;
 }
@@ -497,21 +637,21 @@ static int drv_open(struct inode *inode, struct file *filp)
 	mutex_lock(&device_list_lock);
 
 	list_for_each_entry(drv_info_ptr, &device_list, device_entry) {
-		if (drv_info_ptr->devt == inode->i_rdev) {
+		if (drv_info.devt == inode->i_rdev) {
 			status = 0;
 			break;
 		}
 	}
 	if (status == 0) {
-		if (!drv_info_ptr->buffer) {
-			drv_info_ptr->buffer = kmalloc(bufsiz, GFP_KERNEL);
-			if (!drv_info_ptr->buffer) {
-				dev_dbg(&drv_info_ptr->spi->dev, "open/ENOMEM\n");
+		if (!drv_info.buffer) {
+			drv_info.buffer = kmalloc(bufsiz, GFP_KERNEL);
+			if (!drv_info.buffer) {
+				dev_dbg(&drv_info.spi->dev, "open/ENOMEM\n");
 				status = -ENOMEM;
 			}
 		}
 		if (status == 0) {
-			drv_info_ptr->users++;
+			drv_info.users++;
 			filp->private_data = drv_info_ptr;
 			nonseekable_open(inode, filp);
 		}
@@ -532,17 +672,17 @@ static int drv_release(struct inode *inode, struct file *filp)
 	filp->private_data = NULL;
 
 	/* last close? */
-	drv_info_ptr->users--;
-	if (!drv_info_ptr->users) {
+	drv_info.users--;
+	if (!drv_info.users) {
 		int		dofree;
 
-		kfree(drv_info_ptr->buffer);
-		drv_info_ptr->buffer = NULL;
+		kfree(drv_info.buffer);
+		drv_info.buffer = NULL;
 
 		/* ... after we unbound from the underlying device? */
-		spin_lock_irq(&drv_info_ptr->spi_lock);
-		dofree = (drv_info_ptr->spi == NULL);
-		spin_unlock_irq(&drv_info_ptr->spi_lock);
+		spin_lock_irq(&drv_info.spi_lock);
+		dofree = (drv_info.spi == NULL);
+		spin_unlock_irq(&drv_info.spi_lock);
 
 		if (dofree)
 			kfree(drv_info_ptr);
@@ -577,35 +717,628 @@ static const struct file_operations drv_fops = {
 /*-------------------------------------------------------------------------*/
 irqreturn_t SX1278_OnDio0Irq(int irq, void *dev_id)
 {
+    uint8_t val = 0;
+    volatile uint8_t irqFlags = 0;
+
+    switch( drv_info.sx1278_cfg.State )
+    {
+    case RF_RX_RUNNING:
+        //TimerStop( &RxTimeoutTimer );
+        // RxDone interrupt
+        switch( drv_info.sx1278_cfg.Modem )
+        {
+        case MODEM_FSK:
+            if( drv_info.sx1278_cfg.Fsk.CrcOn == true )
+            {
+                SX1278_Read_Reg( REG_IRQFLAGS2, &irqFlags);
+                if( ( irqFlags & RF_IRQFLAGS2_CRCOK ) != RF_IRQFLAGS2_CRCOK )
+                {
+                    // Clear Irqs
+                    SX1278_Write_Reg( REG_IRQFLAGS1, RF_IRQFLAGS1_RSSI |
+                                                RF_IRQFLAGS1_PREAMBLEDETECT |
+                                                RF_IRQFLAGS1_SYNCADDRESSMATCH );
+                    SX1278_Write_Reg( REG_IRQFLAGS2, RF_IRQFLAGS2_FIFOOVERRUN );
+
+                    //TimerStop( &RxTimeoutTimer );
+
+                    if( drv_info.sx1278_cfg.Fsk.RxContinuous == false )
+                    {
+                        //TimerStop( &RxTimeoutSyncWord );
+                        drv_info.sx1278_cfg.State = RF_IDLE;
+                    }
+                    else
+                    {
+                        // Continuous mode restart Rx chain
+                        SX1278_Read_Reg( REG_RXCONFIG, &val );
+                        SX1278_Write_Reg( REG_RXCONFIG, val | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK );
+                        //TimerStart( &RxTimeoutSyncWord );
+                    }
+                    /*
+                    if( ( RadioEvents != NULL ) && ( RadioEvents->RxError != NULL ) )
+                    {
+                        RadioEvents->RxError( );
+                    }
+                    */
+                    drv_info.sx1278_cfg.FskPacketHandler.PreambleDetected = false;
+                    drv_info.sx1278_cfg.FskPacketHandler.SyncWordDetected = false;
+                    drv_info.sx1278_cfg.FskPacketHandler.NbBytes = 0;
+                    drv_info.sx1278_cfg.FskPacketHandler.Size = 0;
+                    break;
+                }
+            }
+
+            // Read received packet size
+            if( ( drv_info.sx1278_cfg.FskPacketHandler.Size == 0 ) && ( drv_info.sx1278_cfg.FskPacketHandler.NbBytes == 0 ) )
+            {
+                if( drv_info.sx1278_cfg.Fsk.FixLen == false )
+                {
+                    SX1278_Read_FIFO( ( uint8_t* )&drv_info.sx1278_cfg.FskPacketHandler.Size, 1 );
+                }
+                else
+                {
+                    SX1278_Read_Reg( REG_PAYLOADLENGTH, &drv_info.sx1278_cfg.FskPacketHandler.Size);
+                }
+                SX1278_Read_FIFO( drv_info.buffer + drv_info.sx1278_cfg.FskPacketHandler.NbBytes, drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes );
+                drv_info.sx1278_cfg.FskPacketHandler.NbBytes += ( drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes );
+            }
+            else
+            {
+                SX1278_Read_FIFO( drv_info.buffer + drv_info.sx1278_cfg.FskPacketHandler.NbBytes, drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes );
+                drv_info.sx1278_cfg.FskPacketHandler.NbBytes += ( drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes );
+            }
+
+            //TimerStop( &RxTimeoutTimer );
+
+            if( drv_info.sx1278_cfg.Fsk.RxContinuous == false )
+            {
+                drv_info.sx1278_cfg.State = RF_IDLE;
+                //TimerStop( &RxTimeoutSyncWord );
+            }
+            else
+            {
+                // Continuous mode restart Rx chain
+		SX1278_Read_Reg(REG_RXCONFIG, &val);
+                SX1278_Write_Reg( REG_RXCONFIG, val | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK );
+                //TimerStart( &RxTimeoutSyncWord );
+            }
+            /*
+            if( ( RadioEvents != NULL ) && ( RadioEvents->RxDone != NULL ) )
+            {
+                RadioEvents->RxDone( RxTxBuffer, SX1278.Settings.FskPacketHandler.Size, SX1278.Settings.FskPacketHandler.RssiValue, 0 );
+            }
+            */
+            drv_info.sx1278_cfg.FskPacketHandler.PreambleDetected = false;
+            drv_info.sx1278_cfg.FskPacketHandler.SyncWordDetected = false;
+            drv_info.sx1278_cfg.FskPacketHandler.NbBytes = 0;
+            drv_info.sx1278_cfg.FskPacketHandler.Size = 0;
+            break;
+        case MODEM_LORA:
+            {
+                int8_t snr = 0;
+
+                // Clear Irq
+                SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_RXDONE );
+
+                SX1278_Read_Reg( REG_LR_IRQFLAGS, &irqFlags );
+                if( ( irqFlags & RFLR_IRQFLAGS_PAYLOADCRCERROR_MASK ) == RFLR_IRQFLAGS_PAYLOADCRCERROR )
+                {
+                    // Clear Irq
+                    SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_PAYLOADCRCERROR );
+
+                    if( drv_info.sx1278_cfg.RxLoRa.RxContinuous == false )
+                    {
+                        drv_info.sx1278_cfg.State = RF_IDLE;
+                    }
+                    //TimerStop( &RxTimeoutTimer );
+                    /*
+                    if( ( RadioEvents != NULL ) && ( RadioEvents->RxError != NULL ) )
+                    {
+                        RadioEvents->RxError( );
+                    }
+                    */
+                    break;
+                }
+
+                SX1278_Read_Reg( REG_LR_PKTSNRVALUE, &drv_info.sx1278_cfg.LoRaPacketHandler.SnrValue);
+                if( drv_info.sx1278_cfg.LoRaPacketHandler.SnrValue & 0x80 ) // The SNR sign bit is 1
+                {
+                    // Invert and divide by 4
+                    snr = ( ( ~drv_info.sx1278_cfg.LoRaPacketHandler.SnrValue + 1 ) & 0xFF ) >> 2;
+                    snr = -snr;
+                }
+                else
+                {
+                    // Divide by 4
+                    snr = ( drv_info.sx1278_cfg.LoRaPacketHandler.SnrValue & 0xFF ) >> 2;
+                }
+
+                int16_t rssi;
+                SX1278_Read_Reg( REG_LR_PKTRSSIVALUE, &rssi );
+                if( snr < 0 )
+                {
+                    if( drv_info.sx1278_cfg.Channel > RF_MID_BAND_THRESH )
+                    {
+                        drv_info.sx1278_cfg.LoRaPacketHandler.RssiValue = RSSI_OFFSET_HF + rssi + ( rssi >> 4 ) +
+                                                                      snr;
+                    }
+                    else
+                    {
+                        drv_info.sx1278_cfg.LoRaPacketHandler.RssiValue = RSSI_OFFSET_LF + rssi + ( rssi >> 4 ) +
+                                                                      snr;
+                    }
+                }
+                else
+                {
+                    if( drv_info.sx1278_cfg.Channel > RF_MID_BAND_THRESH )
+                    {
+                        drv_info.sx1278_cfg.LoRaPacketHandler.RssiValue = RSSI_OFFSET_HF + rssi + ( rssi >> 4 );
+                    }
+                    else
+                    {
+                        drv_info.sx1278_cfg.LoRaPacketHandler.RssiValue = RSSI_OFFSET_LF + rssi + ( rssi >> 4 );
+                    }
+                }
+
+                SX1278_Read_Reg( REG_LR_RXNBBYTES, &drv_info.sx1278_cfg.LoRaPacketHandler.Size );
+                SX1278_Read_Reg( REG_LR_FIFORXCURRENTADDR, &val);
+                SX1278_Write_Reg( REG_LR_FIFOADDRPTR,  val);
+                SX1278_Read_FIFO( drv_info.buffer, drv_info.sx1278_cfg.LoRaPacketHandler.Size );
+
+                if( drv_info.sx1278_cfg.RxLoRa.RxContinuous == false )
+                {
+                    drv_info.sx1278_cfg.State = RF_IDLE;
+                }
+                //TimerStop( &RxTimeoutTimer );
+                /*
+                if( ( RadioEvents != NULL ) && ( RadioEvents->RxDone != NULL ) )
+                {
+                    RadioEvents->RxDone( RxTxBuffer, SX1278.Settings.LoRaPacketHandler.Size, SX1278.Settings.LoRaPacketHandler.RssiValue, SX1278.Settings.LoRaPacketHandler.SnrValue );
+                }
+                */
+            }
+            break;
+        default:
+            break;
+        }
+        break;
+    case RF_TX_RUNNING:
+        //TimerStop( &TxTimeoutTimer );
+        cancel_delayed_work_sync(&drv_info.lora_work);
+        // TxDone interrupt
+        switch( drv_info.sx1278_cfg.Modem )
+        {
+        case MODEM_LORA:
+            // Clear Irq
+            SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_TXDONE );
+            // Intentional fall through
+            complete(&drv_info.lora_complete);
+        case MODEM_FSK:
+        default:
+            drv_info.sx1278_cfg.State = RF_IDLE;
+            /*
+            if( ( RadioEvents != NULL ) && ( RadioEvents->TxDone != NULL ) )
+            {
+                RadioEvents->TxDone( );
+            }
+            */
+            break;
+        }
+        break;
+    default:
+        break;
+    }
     return IRQ_HANDLED;
 }
 
 irqreturn_t SX1278_OnDio1Irq(int irq, void *dev_id)
 {
+    switch( drv_info.sx1278_cfg.State )
+    {
+        case RF_RX_RUNNING:
+            switch( drv_info.sx1278_cfg.Modem )
+            {
+            case MODEM_FSK:
+                // FifoLevel interrupt
+                // Read received packet size
+                if( ( drv_info.sx1278_cfg.FskPacketHandler.Size == 0 ) && ( drv_info.sx1278_cfg.FskPacketHandler.NbBytes == 0 ) )
+                {
+                    if( drv_info.sx1278_cfg.Fsk.FixLen == false )
+                    {
+                        SX1278_Read_FIFO( ( uint8_t* )&drv_info.sx1278_cfg.FskPacketHandler.Size, 1 );
+                    }
+                    else
+                    {
+                        SX1278_Read_Reg( REG_PAYLOADLENGTH, &drv_info.sx1278_cfg.FskPacketHandler.Size );
+                    }
+                }
+
+                if( ( drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes ) > drv_info.sx1278_cfg.FskPacketHandler.FifoThresh )
+                {
+                    SX1278_Read_FIFO( ( drv_info.buffer + drv_info.sx1278_cfg.FskPacketHandler.NbBytes ), drv_info.sx1278_cfg.FskPacketHandler.FifoThresh );
+                    drv_info.sx1278_cfg.FskPacketHandler.NbBytes += drv_info.sx1278_cfg.FskPacketHandler.FifoThresh;
+                }
+                else
+                {
+                    SX1278_Read_FIFO( ( drv_info.buffer + drv_info.sx1278_cfg.FskPacketHandler.NbBytes ), drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes );
+                    drv_info.sx1278_cfg.FskPacketHandler.NbBytes += ( drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes );
+                }
+                break;
+            case MODEM_LORA:
+                // Sync time out
+                //TimerStop( &RxTimeoutTimer );
+                // Clear Irq
+                SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_RXTIMEOUT );
+
+                drv_info.sx1278_cfg.State = RF_IDLE;
+                /*
+                if( ( RadioEvents != NULL ) && ( RadioEvents->RxTimeout != NULL ) )
+                {
+                    RadioEvents->RxTimeout( );
+                }
+                */
+                break;
+            default:
+                break;
+            }
+            break;
+        case RF_TX_RUNNING:
+            switch( drv_info.sx1278_cfg.Modem )
+            {
+            case MODEM_FSK:
+                // FifoEmpty interrupt
+                if( ( drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes ) > drv_info.sx1278_cfg.FskPacketHandler.ChunkSize )
+                {
+                    SX1278_Write_FIFO( ( drv_info.buffer + drv_info.sx1278_cfg.FskPacketHandler.NbBytes ), drv_info.sx1278_cfg.FskPacketHandler.ChunkSize );
+                    drv_info.sx1278_cfg.FskPacketHandler.NbBytes += drv_info.sx1278_cfg.FskPacketHandler.ChunkSize;
+                }
+                else
+                {
+                    // Write the last chunk of data
+                    SX1278_Write_FIFO( drv_info.buffer + drv_info.sx1278_cfg.FskPacketHandler.NbBytes, drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes );
+                    drv_info.sx1278_cfg.FskPacketHandler.NbBytes += drv_info.sx1278_cfg.FskPacketHandler.Size - drv_info.sx1278_cfg.FskPacketHandler.NbBytes;
+                }
+                break;
+            case MODEM_LORA:
+                break;
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
+    }
+
     return IRQ_HANDLED;
 }
 
 irqreturn_t SX1278_OnDio2Irq(int irq, void *dev_id)
 {
+    uint8_t val = 0, val1 = 0;
+    
+    switch( drv_info.sx1278_cfg.State )
+    {
+        case RF_RX_RUNNING:
+            switch( drv_info.sx1278_cfg.Modem )
+            {
+            case MODEM_FSK:
+                // Checks if DIO4 is connected. If it is not PreambleDetected is set to true.
+                //if( SX1278.DIO4.port == NULL )
+                //{
+                //    SX1278.Settings.FskPacketHandler.PreambleDetected = true;
+                //}
+
+                if( ( drv_info.sx1278_cfg.FskPacketHandler.PreambleDetected == true ) && ( drv_info.sx1278_cfg.FskPacketHandler.SyncWordDetected == false ) )
+                {
+                    //TimerStop( &RxTimeoutSyncWord );
+
+                    drv_info.sx1278_cfg.FskPacketHandler.SyncWordDetected = true;
+
+                    SX1278_Read_Reg( REG_RSSIVALUE, &val );
+                    drv_info.sx1278_cfg.FskPacketHandler.RssiValue = -( val >> 1 );
+
+                    SX1278_Read_Reg( REG_AFCMSB, &val);
+                    SX1278_Read_Reg( REG_AFCLSB, &val1);
+                    drv_info.sx1278_cfg.FskPacketHandler.AfcValue = ( int32_t )( double )( ( ( uint16_t )val << 8 ) |
+                                                                           ( uint16_t )val1 ) *
+                                                                           ( double )FREQ_STEP;
+                    SX1278_Read_Reg( REG_LNA, &val );
+                    drv_info.sx1278_cfg.FskPacketHandler.RxGain = ( val >> 5 ) & 0x07;
+                }
+                break;
+            case MODEM_LORA:
+                if( drv_info.sx1278_cfg.RxLoRa.FreqHopOn == true )
+                {
+                    // Clear Irq
+                    SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL );
+                    /*
+                    if( ( RadioEvents != NULL ) && ( RadioEvents->FhssChangeChannel != NULL ) )
+                    {
+                        RadioEvents->FhssChangeChannel( ( SX1278Read( REG_LR_HOPCHANNEL ) & RFLR_HOPCHANNEL_CHANNEL_MASK ) );
+                    }
+                    */
+                }
+                break;
+            default:
+                break;
+            }
+            break;
+        case RF_TX_RUNNING:
+            switch( drv_info.sx1278_cfg.Modem )
+            {
+            case MODEM_FSK:
+                break;
+            case MODEM_LORA:
+                if( drv_info.sx1278_cfg.TxLoRa.FreqHopOn == true )
+                {
+                    // Clear Irq
+                    SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL );
+                    /*
+                    if( ( RadioEvents != NULL ) && ( RadioEvents->FhssChangeChannel != NULL ) )
+                    {
+                        RadioEvents->FhssChangeChannel( ( SX1278Read( REG_LR_HOPCHANNEL ) & RFLR_HOPCHANNEL_CHANNEL_MASK ) );
+                    }
+                    */
+                }
+                break;
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
+    }
+
     return IRQ_HANDLED;
 }
 
 irqreturn_t SX1278_OnDio3Irq(int irq, void *dev_id)
 {
+    uint8_t val = 0;
+
+    switch( drv_info.sx1278_cfg.Modem )
+    {
+    case MODEM_FSK:
+        break;
+    case MODEM_LORA:
+        SX1278_Read_Reg( REG_LR_IRQFLAGS , &val);
+        
+        if( ( val & RFLR_IRQFLAGS_CADDETECTED ) == RFLR_IRQFLAGS_CADDETECTED )
+        {
+            // Clear Irq
+            SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDETECTED | RFLR_IRQFLAGS_CADDONE );
+            /*
+            if( ( RadioEvents != NULL ) && ( RadioEvents->CadDone != NULL ) )
+            {
+                RadioEvents->CadDone( true );
+            }
+            */
+        }
+        else
+        {
+            // Clear Irq
+            SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDONE );
+            /*
+            if( ( RadioEvents != NULL ) && ( RadioEvents->CadDone != NULL ) )
+            {
+                RadioEvents->CadDone( false );
+            }
+            */
+        }
+        break;
+    default:
+        break;
+    }
+
     return IRQ_HANDLED;
 }
 
-irqreturn_t SX1278_OnDio4Irq(int irq, void *dev_id);
+irqreturn_t SX1278_OnDio4Irq(int irq, void *dev_id)
 {
+    switch( drv_info.sx1278_cfg.Modem )
+    {
+    case MODEM_FSK:
+        {
+            if( drv_info.sx1278_cfg.FskPacketHandler.PreambleDetected == false )
+            {
+                drv_info.sx1278_cfg.FskPacketHandler.PreambleDetected = true;
+            }
+        }
+        break;
+    case MODEM_LORA:
+        break;
+    default:
+        break;
+    }
     return IRQ_HANDLED;
 }
 
 /*!
  * Hardware DIO IRQ callback initialization
  */
-DioIrqHandler *DioIrq[] = { SX1278_OnDio0Irq, SX1278_OnDio1Irq,
-                            SX1278_OnDio2Irq, SX1278_OnDio3Irq,
-                            SX1278_OnDio4Irq, NULL };
+
+int Lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int result = 0;
+    
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+    
+    gpio_request(sx1278_gpio_ptr->DIO0, "DIO0");
+    gpio_request(sx1278_gpio_ptr->DIO1, "DIO1");
+    gpio_request(sx1278_gpio_ptr->DIO2, "DIO2");
+    gpio_request(sx1278_gpio_ptr->DIO3, "DIO3");
+    gpio_request(sx1278_gpio_ptr->DIO4, "DIO4");
+    gpio_request(sx1278_gpio_ptr->Reset, "RESET");
+
+    gpio_direction_input(sx1278_gpio_ptr->DIO0);
+    gpio_direction_input(sx1278_gpio_ptr->DIO1);
+    gpio_direction_input(sx1278_gpio_ptr->DIO2);
+    gpio_direction_input(sx1278_gpio_ptr->DIO3);
+    gpio_direction_input(sx1278_gpio_ptr->DIO4);
+    gpio_direction_output(sx1278_gpio_ptr->Reset, 1);
+
+ERR_EXIT:
+    
+    return result;
+}
+
+int Lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int irq = 0;
+    int result = 0;
+
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT0;
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO0);
+    result = request_irq(irq , SX1278_OnDio0Irq, IRQF_TRIGGER_RISING, "DI0_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        result = -EFAULT;
+        goto ERR_EXIT0; 
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO1);
+    result = request_irq(irq , SX1278_OnDio1Irq, IRQF_TRIGGER_RISING, "DI1_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        result = -EFAULT;
+        goto ERR_EXIT1; 
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO2);
+    result = request_irq(irq , SX1278_OnDio2Irq, IRQF_TRIGGER_RISING, "DI2_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        result = -EFAULT;
+        goto ERR_EXIT2; 
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO3);
+    result = request_irq(irq , SX1278_OnDio3Irq, IRQF_TRIGGER_RISING, "DI3_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        result = -EFAULT;
+        goto ERR_EXIT3; 
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO4);
+    result = request_irq(irq , SX1278_OnDio4Irq, IRQF_TRIGGER_RISING, "DI4_IRQ", NULL);
+    if(result) 	
+    {       
+        printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
+        result = -EFAULT;
+        goto ERR_EXIT4; 
+    }
+
+    return result;
+
+ERR_EXIT4:
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO3);
+    free_irq(irq, NULL);    
+ERR_EXIT3:
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO2);
+    free_irq(irq, NULL);
+ERR_EXIT2:
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO1);
+    free_irq(irq, NULL);
+ERR_EXIT1:
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO0);
+    free_irq(irq, NULL);
+ERR_EXIT0:
+    return result;
+}
+
+int Lora_IoDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int result = 0;
+
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+
+    gpio_free(sx1278_gpio_ptr->DIO0);
+    gpio_free(sx1278_gpio_ptr->DIO1);
+    gpio_free(sx1278_gpio_ptr->DIO2);
+    gpio_free(sx1278_gpio_ptr->DIO3);
+    gpio_free(sx1278_gpio_ptr->DIO4);
+    gpio_free(sx1278_gpio_ptr->Reset);
+
+ERR_EXIT:
+
+    return result;
+}
+
+int Lora_IoIrqDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int irq = 0;
+    int result = 0;
+
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO0);
+    free_irq(irq, NULL);
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO1);
+    free_irq(irq, NULL);
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO2);
+    free_irq(irq, NULL);
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO3);
+    free_irq(irq, NULL);
+
+    irq = gpio_to_irq(sx1278_gpio_ptr->DIO4);
+    free_irq(irq, NULL);
+
+ERR_EXIT:
+    
+    return result;
+}
+
+
+int Lora_Reset(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+{
+    int result = 0;
+
+    if(NULL == sx1278_gpio_ptr)
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+
+    // Set RESET pin to 0
+    gpio_direction_output(sx1278_gpio_ptr->Reset, 0);
+
+    // Wait 1 ms
+    mdelay(1);
+
+    // Configure RESET as input
+    gpio_direction_input(sx1278_gpio_ptr->Reset);
+
+    // Wait 6 ms
+    mdelay(6);
+
+ERR_EXIT:
+
+    return result;
+}
 
 
 static int drv_probe(struct spi_device *spi)
@@ -617,52 +1350,52 @@ static int drv_probe(struct spi_device *spi)
 	struct device_node *np = spi->dev.of_node;
 
 	/* Allocate driver data */
-	drv_info_ptr = kzalloc(sizeof(*drv_info_ptr), GFP_KERNEL);
-	if(!drv_info_ptr)
-		return -ENOMEM;
+	//drv_info_ptr = kzalloc(sizeof(*drv_info_ptr), GFP_KERNEL);
+	//if(!drv_info_ptr)
+	//	return -ENOMEM;
     
-    drv_info_ptr->sx2178_gpio.DIO0 = of_get_named_gpio(np, "dio0-gpios", 0);
-    if(drv_info_ptr->sx2178_gpio.DIO0 < 0) 
+    drv_info.sx2178_gpio.DIO0 = of_get_named_gpio(np, "dio0-gpios", 0);
+    if(drv_info.sx2178_gpio.DIO0 < 0) 
     {
         printk(KERN_ERR "%s %d Get DIO0 pin error\n", __FUNCTION__, __LINE__);
         result = -EINVAL;
         goto ERR_EXIT;
     }
     
-    drv_info_ptr->sx2178_gpio.DIO1 = of_get_named_gpio(np, "dio1-gpios", 0);
-    if(drv_info_ptr->sx2178_gpio.DIO1 < 0) 
+    drv_info.sx2178_gpio.DIO1 = of_get_named_gpio(np, "dio1-gpios", 0);
+    if(drv_info.sx2178_gpio.DIO1 < 0) 
     {
         printk(KERN_ERR "%s %d Get DIO1 pin error\n", __FUNCTION__, __LINE__);
         result = -EINVAL;
         goto ERR_EXIT;
     }
     
-    drv_info_ptr->sx2178_gpio.DIO2 = of_get_named_gpio(np, "dio2-gpios", 0);
-    if(drv_info_ptr->sx2178_gpio.DIO2 < 0) 
+    drv_info.sx2178_gpio.DIO2 = of_get_named_gpio(np, "dio2-gpios", 0);
+    if(drv_info.sx2178_gpio.DIO2 < 0) 
     {
         printk(KERN_ERR "%s %d Get DIO2 pin error\n", __FUNCTION__, __LINE__);
         result = -EINVAL;
         goto ERR_EXIT;
     }
     
-    drv_info_ptr->sx2178_gpio.DIO3 = of_get_named_gpio(np, "dio3-gpios", 0);
-    if(drv_info_ptr->sx2178_gpio.DIO3 < 0)
+    drv_info.sx2178_gpio.DIO3 = of_get_named_gpio(np, "dio3-gpios", 0);
+    if(drv_info.sx2178_gpio.DIO3 < 0)
     {
         printk(KERN_ERR "%s %d Get DIO3 pin error\n", __FUNCTION__, __LINE__);
         result = -EINVAL;
         goto ERR_EXIT;
     }
     
-    drv_info_ptr->sx2178_gpio.DIO4 = of_get_named_gpio(np, "dio4-gpios", 0);
-    if(drv_info_ptr->sx2178_gpio.DIO4 < 0) 
+    drv_info.sx2178_gpio.DIO4 = of_get_named_gpio(np, "dio4-gpios", 0);
+    if(drv_info.sx2178_gpio.DIO4 < 0) 
     {
         printk(KERN_ERR "%s %d Get DIO4 pin error\n", __FUNCTION__, __LINE__);
         result = -EINVAL;
         goto ERR_EXIT;
     }
     
-    drv_info_ptr->sx2178_gpio.Reset= of_get_named_gpio(np, "reset-gpios", 0);
-    if(drv_info_ptr->sx2178_gpio.Reset < 0) 
+    drv_info.sx2178_gpio.Reset= of_get_named_gpio(np, "reset-gpios", 0);
+    if(drv_info.sx2178_gpio.Reset < 0) 
     {
         printk(KERN_ERR "%s %d Get Reset pin error\n", __FUNCTION__, __LINE__);
         result = -EINVAL;
@@ -670,11 +1403,12 @@ static int drv_probe(struct spi_device *spi)
     }
     
 	/* Initialize the driver data */
-	drv_info_ptr->spi = spi;
-	spin_lock_init(&drv_info_ptr->spi_lock);
-	mutex_init(&drv_info_ptr->buf_lock);
+	drv_info.spi = spi;
+	spin_lock_init(&drv_info.spi_lock);
+	mutex_init(&drv_info.buf_lock);
+    mutex_init(&drv_info.lora_mutex);
 
-	INIT_LIST_HEAD(&drv_info_ptr->device_entry);
+	INIT_LIST_HEAD(&drv_info.device_entry);
 
 	/* If we can allocate a minor number, hook up this device.
 	 * Reusing minors is fine so long as udev or mdev is working.
@@ -684,8 +1418,8 @@ static int drv_probe(struct spi_device *spi)
 	if (minor < N_SPI_MINORS) {
 		struct device *dev;
         
-		drv_info_ptr->devt = MKDEV(DRV_MAJOR, minor);
-		dev = device_create(drv_class, &spi->dev, drv_info_ptr->devt,
+		drv_info.devt = MKDEV(DRV_MAJOR, minor);
+		dev = device_create(drv_class, &spi->dev, drv_info.devt,
 				    drv_info_ptr, "sx1278%d.%d",
 				    spi->master->bus_num, spi->chip_select);
 		result = PTR_ERR_OR_ZERO(dev);
@@ -695,13 +1429,13 @@ static int drv_probe(struct spi_device *spi)
 	}
 	if (result == 0) {
 		set_bit(minor, minors);
-		list_add(&drv_info_ptr->device_entry, &device_list);
+		list_add(&drv_info.device_entry, &device_list);
 	}
 	mutex_unlock(&device_list_lock);
 
 	//初始化等待队列
-	init_waitqueue_head(&(drv_info_ptr->lora_wq));
-    INIT_DELAYED_WORK(&drv_info_ptr->lora_work, lora_work_func);
+	init_waitqueue_head(&(drv_info.lora_wq));
+    INIT_DELAYED_WORK(&drv_info.lora_work, lora_work_func);
 
 	if (result == 0)
 		spi_set_drvdata(spi, drv_info_ptr);
@@ -712,16 +1446,68 @@ static int drv_probe(struct spi_device *spi)
 	spi->mode = SPI_MODE_0;
 	spi_setup(spi);	
 
-    result = SX1278_Init(drv_info_ptr->spi, &drv_info_ptr->sx2178_gpio);
+    result = Lora_IoInit(&drv_info.sx2178_gpio);
 	if (result < 0) 
+    {
+		goto ERR_EXIT1;
+	}
+
+    result = Lora_IoIrqInit(&drv_info.sx2178_gpio);
+	if (result < 0) 
+    {
+		goto ERR_EXIT2;
+	}
+
+    result = Lora_Reset(&drv_info.sx2178_gpio);
+    if (result < 0) 
+    {
+		goto ERR_EXIT3;
+	}
+
+    drv_info.sx1278_cfg.Channel                    = 433000000;
+    drv_info.sx1278_cfg.RxLoRa.Bandwidth           = 0;
+    drv_info.sx1278_cfg.RxLoRa.Datarate            = 7;
+    drv_info.sx1278_cfg.RxLoRa.LowDatarateOptimize = 0;
+    drv_info.sx1278_cfg.RxLoRa.Coderate            = 1;
+    drv_info.sx1278_cfg.RxLoRa.PreambleLen         = 8;
+    drv_info.sx1278_cfg.RxLoRa.FixLen              = false;
+    drv_info.sx1278_cfg.RxLoRa.PayloadLen          = 0;
+    drv_info.sx1278_cfg.RxLoRa.CrcOn               = true;
+    drv_info.sx1278_cfg.RxLoRa.FreqHopOn           = 0;
+    drv_info.sx1278_cfg.RxLoRa.HopPeriod           = 0;
+    drv_info.sx1278_cfg.RxLoRa.IqInverted          = false;
+    drv_info.sx1278_cfg.RxLoRa.RxContinuous        = true;
+    drv_info.sx1278_cfg.PublicNetwork       = 0;
+
+    drv_info.sx1278_cfg.Channel                    = 433000000;
+    drv_info.sx1278_cfg.TxLoRa.Power               = 20;
+    drv_info.sx1278_cfg.TxLoRa.Bandwidth           = 0;
+    drv_info.sx1278_cfg.TxLoRa.Datarate            = 7;
+    drv_info.sx1278_cfg.TxLoRa.LowDatarateOptimize = 0;
+    drv_info.sx1278_cfg.TxLoRa.Coderate            = 1;
+    drv_info.sx1278_cfg.TxLoRa.PreambleLen         = 8;
+    drv_info.sx1278_cfg.TxLoRa.FixLen              = 0;
+    drv_info.sx1278_cfg.TxLoRa.PayloadLen          = 0;
+    drv_info.sx1278_cfg.TxLoRa.CrcOn               = true;
+    drv_info.sx1278_cfg.TxLoRa.FreqHopOn           = 0;
+    drv_info.sx1278_cfg.TxLoRa.HopPeriod           = 0;
+    drv_info.sx1278_cfg.TxLoRa.IqInverted          = false;
+    drv_info.sx1278_cfg.TxLoRa.TxTimeout           = 0;
+
+    SX1278Init(drv_info.spi, &drv_info.sx1278_cfg);
+    if (result < 0) 
     {
 		goto ERR_EXIT1;
 	}
 
     return result;
     
+ERR_EXIT3:
+    Lora_IoIrqDeInit(&drv_info.sx2178_gpio);
+ERR_EXIT2:
+    Lora_IoDeInit(&drv_info.sx2178_gpio);
 ERR_EXIT1:
-    device_destroy(drv_class, drv_info_ptr->devt);
+    device_destroy(drv_class, drv_info.devt);
 ERR_EXIT:
     if(drv_info_ptr)
         kfree(drv_info_ptr);
@@ -731,21 +1517,21 @@ ERR_EXIT:
 
 static int drv_remove(struct spi_device *spi)
 {
-	drv_info_st_ptr drv_info_ptr = spi_get_drvdata(spi);
+	//drv_info_st_ptr drv_info_ptr = spi_get_drvdata(spi);
 
 	/* make sure ops on existing fds can abort cleanly */
-	spin_lock_irq(&drv_info_ptr->spi_lock);
-	drv_info_ptr->spi = NULL;
-	spin_unlock_irq(&drv_info_ptr->spi_lock);
+	spin_lock_irq(&drv_info.spi_lock);
+	drv_info.spi = NULL;
+	spin_unlock_irq(&drv_info.spi_lock);
 
 	/* prevent new opens */
-	mutex_lock(&device_list_lock);
-	list_del(&drv_info_ptr->device_entry);
-	device_destroy(drv_class, drv_info_ptr->devt);
-	clear_bit(MINOR(drv_info_ptr->devt), minors);
-	if (drv_info_ptr->users == 0)
-		kfree(drv_info_ptr);
-	mutex_unlock(&device_list_lock);
+	//mutex_lock(&drv_info.device_list_lock);
+	list_del(&drv_info.device_entry);
+	device_destroy(drv_class, drv_info.devt);
+	clear_bit(MINOR(drv_info.devt), minors);
+	//if (drv_info.users == 0)
+	//	kfree(drv_info_ptr);
+	//mutex_unlock(&drv_info.device_list_lock);
 
 	return 0;
 }
