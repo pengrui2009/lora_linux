@@ -20,6 +20,18 @@
 
 #include "sx1278.h"
 
+/*!
+ * Radio driver internal state machine states definition
+ */
+typedef enum
+{
+    RF_IDLE = 0,   //!< The radio is idle
+    RF_RX_RUNNING, //!< The radio is in reception state
+    RF_TX_RUNNING, //!< The radio is in transmission state
+    RF_CAD,        //!< The radio is doing channel activity detection
+}RadioState_en;
+
+
 typedef struct _drv_info_st 
 {
     char        	*drv_name;
@@ -37,6 +49,8 @@ typedef struct _drv_info_st
     /*0: success 1:send timeout 2:rx timeout*/
     int flag;
 
+    uint8_t           lora_recv_state;
+
     wait_queue_head_t lora_wq;
 
     struct completion *lora_complete;
@@ -46,6 +60,8 @@ typedef struct _drv_info_st
     SX1278_Gpio_st sx2178_gpio;
 
     LoRa_Config_st sx1278_cfg;
+
+    RadioState_en sx1278_state;
 }drv_info_st, *drv_info_st_ptr;
 
 

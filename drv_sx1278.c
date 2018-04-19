@@ -110,7 +110,7 @@ int Lora_IoIrqDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr);
 static void lora_work_func(struct work_struct *w)
 {
     uint8_t i,val = 0;
-    switch( drv_info.sx1278_cfg.State )
+    switch( drv_info.sx1278_state )
     {
     case RF_RX_RUNNING:
         if( drv_info.sx1278_cfg.Modem == MODEM_FSK )
@@ -152,7 +152,7 @@ static void lora_work_func(struct work_struct *w)
         // it depends on the platform design.
         //
         // The workaround is to put the radio in a known state. Thus, we re-initialize it.
-
+#if 0
         // BEGIN WORKAROUND
 
         // Reset the radio
@@ -175,9 +175,9 @@ static void lora_work_func(struct work_struct *w)
         // Restore previous network type setting.
         SX1278SetPublicNetwork( drv_info.sx1278_cfg.PublicNetwork );
         // END WORKAROUND
-
-        drv_info.sx1278_cfg.State = RF_IDLE;
-        drv_info.flag = 1;
+#endif
+        drv_info.sx1278_state = RF_IDLE;
+        
         complete(drv_info.lora_complete);
         /*
         if( ( RadioEvents != NULL ) && ( RadioEvents->TxTimeout != NULL ) )
@@ -254,7 +254,45 @@ static inline ssize_t spidev_sync_read(drv_info_st_ptr drv_info_ptr, size_t len)
 /* Read-only message with current device setup */
 static ssize_t drv_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
+    int i = 0;
+    uint8_t rxcount = 0;
     int result = 0;
+
+    if(count > 256)
+    {
+        rxcount = 256;
+    }else{
+        rxcount = count;
+    }
+
+    wait_event_interruptible(drv_info.lora_wq, drv_info.lora_recv_state);
+
+    drv_info.lora_recv_state = 0;
+
+    drv_info.buffer = kzalloc(count, GFP_KERNEL);
+    if(!drv_info.buffer)
+        goto ERR_EXIT;
+
+    result = SX1278GetRxPacket(drv_info.buffer, rxcount);
+
+    copy_to_user(buf, drv_info.buffer, result);
+
+    if( drv_info.sx1278_cfg.rx_cfg.RxSingleOn == true ) // Rx single mode
+    {
+        //RFLRState = RFLR_STATE_RX_INIT;
+        SX1278StartRx();
+    }
+    else // Rx continuous mode
+    {
+        //RFLRState = RFLR_STATE_RX_RUNNING;
+    }
+
+    
+
+ERR_EXIT:
+
+    return result;
+#if 0    
 	//drv_info_st_ptr	drv_info_ptr;
 	//ssize_t			status = 0;
 
@@ -292,12 +330,51 @@ static ssize_t drv_read(struct file *filp, char __user *buf, size_t count, loff_
     mutex_unlock(&drv_info.lora_mutex);
   
     return result;
+#endif  
 }
 
 /* Write-only message with current device setup */
 static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
     int result = 0;
+    uint32_t timeout = 0;
+    int i = 0;
+
+    drv_info.buffer = kzalloc(count, GFP_KERNEL);
+    if(!drv_info.buffer)
+    {
+        result= -ENOMEM;
+        goto ERR_EXIT;
+    }
+
+    result = copy_from_user(drv_info.buffer, buf, count);
+	if (result == 0)
+    {
+        for(i=0; i<count; i+=255)
+        {
+            uint8_t buffer_size = ((i + 255) < count) ? 256:(count - i);
+            SX1278SetTxPacket(drv_info.buffer + i, buffer_size);
+
+            SX1278StartTx();
+            drv_info.sx1278_state = RF_TX_RUNNING;
+            schedule_delayed_work(drv_info.lora_work, drv_info.sx1278_cfg.tx_cfg.TxPacketTimeout);
+
+            wait_for_completion(drv_info.lora_complete);
+
+            SX1278TxFinished();
+            drv_info.sx1278_state = RF_IDLE;
+        }
+    }
+
+    SX1278StartRx();
+    drv_info.sx1278_state =RF_RX_RUNNING;
+ERR_EXIT:
+
+    if(drv_info.buffer)
+        kfree(drv_info.buffer);
+
+    return result;
+#if 0
     uint32_t timeout = 0;
 	//drv_info_st_ptr	drv_info_ptr = NULL;
 	ssize_t			status = 0;
@@ -349,6 +426,7 @@ static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count
     }
 	mutex_unlock(&drv_info.lora_mutex);
 
+
 ERR_EXIT:
 
     if(drv_info.buffer)
@@ -357,6 +435,8 @@ ERR_EXIT:
     }
     
 	return result;
+#endif
+
 }
 
 static int spidev_message(drv_info_st_ptr drv_info_ptr, struct spi_ioc_transfer *u_xfers, unsigned n_xfers)
@@ -629,6 +709,23 @@ drv_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #define drv_compat_ioctl NULL
 #endif /* CONFIG_COMPAT */
 
+static unsigned int drv_poll(struct file *file, poll_table *wait)  
+{      
+    unsigned int mask = 0;        
+    /* 该函数，只是将进程挂在button_waitq队列上，而不是立即休眠 */      
+    poll_wait(file, &button_waitq, wait);        
+    /* 当没有按键按下时，即不会进入按键中断处理函数，此时ev_press = 0       
+     * 当按键按下时，就会进入按键中断处理函数，此时ev_press被设置为1      
+     */      
+    if(ev_press)      
+    {          
+        mask |= POLLIN | POLLRDNORM;  /* 表示有数据可读 */      
+    }        
+    /* 如果有按键按下时，mask |= POLLIN | POLLRDNORM,否则mask = 0 */      
+    return mask;    
+}  
+
+
 static int drv_open(struct inode *inode, struct file *filp)
 {
 	drv_info_st_ptr	drv_info_ptr;
@@ -705,6 +802,7 @@ static const struct file_operations drv_fops = {
 	.open           = drv_open,
 	.release        = drv_release,
 	.llseek         = no_llseek,
+	.poll           = drv_poll,
 };
 
 /*-------------------------------------------------------------------------*/
@@ -717,6 +815,25 @@ static const struct file_operations drv_fops = {
 /*-------------------------------------------------------------------------*/
 irqreturn_t SX1278_OnDio0Irq(int irq, void *dev_id)
 {
+    switch(drv_info.sx1278_state)
+    {
+    case RF_RX_RUNNING:
+        {
+            SX1278RxClearIrq();
+            drv_info.lora_recv_state = 1;
+            wake_up_interruptible(&drv_info.lora_wq); 
+            break;
+        }
+    case RF_TX_RUNNING:
+        {
+            SX1278TxFinished();
+            drv_info.sx1278_state = RF_IDLE;
+            complete(drv_info.lora_complete);
+            break;
+        }
+    }
+
+#if 0
     uint8_t val = 0;
     volatile uint8_t irqFlags = 0;
 
@@ -927,6 +1044,7 @@ irqreturn_t SX1278_OnDio0Irq(int irq, void *dev_id)
     default:
         break;
     }
+#endif    
     return IRQ_HANDLED;
 }
 

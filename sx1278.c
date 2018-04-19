@@ -1389,7 +1389,7 @@ void SX1278StartRx( void )
         
         SX1278LoRaSetOpMode( RFLR_OPMODE_RECEIVER );
     }
-    
+
     //memset( RFBuffer, 0, ( size_t )RF_BUFFER_SIZE );
     //PacketTimeout = LoRaSettings.RxPacketTimeout;
     //RxTimeoutTimer = GET_TICK_COUNT( );
@@ -1397,8 +1397,9 @@ void SX1278StartRx( void )
 }
 
 
-void SX1278GetRxPacket( void *buffer, uint16_t *size )
+int SX1278GetRxPacket( uint8_t *buffer_ptr, uint8_t buffer_len)
 {
+    int result = 0;
     uint8_t RegIrqFlags = 0;
     uint8_t RegPktRssiValue = 0;
     uint8_t RegFifoAddrPtr = 0;
@@ -1413,14 +1414,15 @@ void SX1278GetRxPacket( void *buffer, uint16_t *size )
         
         if( sx1278_cfg_ptr->rx_cfg.RxSingleOn == true ) // Rx single mode
         {
-            RFLRState = RFLR_STATE_RX_INIT;
+            //RFLRState = RFLR_STATE_RX_INIT;
+            SX1278StartRx();
         }
         else
         {
-            RFLRState = RFLR_STATE_RX_RUNNING;
+            //RFLRState = RFLR_STATE_RX_RUNNING;
         }
 
-        return;
+        return 0;
     }
     
     {
@@ -1471,45 +1473,46 @@ void SX1278GetRxPacket( void *buffer, uint16_t *size )
 
         if( sx1278_cfg_ptr->rx_cfg.ImplicitHeaderOn == true )
         {
-            RxPacketSize = SX1276LR->RegPayloadLength;
-            SX1276ReadFifo( RFBuffer, SX1276LR->RegPayloadLength );
-        }
-        else
-        {
-            SX1278_Read_Reg( REG_LR_NBRXBYTES, &RegNbRxBytes );
-            //RxPacketSize = SX1276LR->RegNbRxBytes;
-            SX1278_Read_FIFO( RFBuffer, RegNbRxBytes );
-        }
-    }
-    else // Rx continuous mode
-    {
-        SX1278_Read_Reg( REG_LR_FIFORXCURRENTADDR, &SX1276LR->RegFifoRxCurrentAddr );
-
-        if( sx1278_cfg_ptr->rx_cfg.ImplicitHeaderOn == true )
-        {
-            RxPacketSize = SX1276LR->RegPayloadLength;
-            RegFifoAddrPtr = RegFifoRxCurrentAddr;
-            SX1278_Write_Reg( REG_LR_FIFOADDRPTR, SX1276LR->RegFifoAddrPtr );
-            SX1278_Read_FIFO( RFBuffer, SX1276LR->RegPayloadLength );
+            SX1276ReadFifo( buffer_ptr, buffer_len );
         }
         else
         {
             uint8_t RegNbRxBytes = 0;
-            SX1278_Read_Reg( REG_LR_NBRXBYTES, &RegNbRxBytes );
+            SX1278_Read_Reg( REG_LR_RXNBBYTES, &RegNbRxBytes );
+            //RxPacketSize = SX1276LR->RegNbRxBytes;
+            SX1278_Read_FIFO( buffer_ptr, RegNbRxBytes );
+            result = RegNbRxBytes;
+        }
+    }
+    else // Rx continuous mode
+    {
+        uint8_t RegFifoRxCurrentAddr = 0;
+        SX1278_Read_Reg( REG_LR_FIFORXCURRENTADDR, &RegFifoRxCurrentAddr );
+
+        if( sx1278_cfg_ptr->rx_cfg.ImplicitHeaderOn == true )
+        {            
+            RegFifoAddrPtr = RegFifoRxCurrentAddr;
+            SX1278_Write_Reg( REG_LR_FIFOADDRPTR, RegFifoAddrPtr );
+            SX1278_Read_FIFO( buffer_ptr, buffer_len );
+        }
+        else
+        {
+            uint8_t RegNbRxBytes = 0;
+            SX1278_Read_Reg( REG_LR_RXNBBYTES, &RegNbRxBytes );
             //RxPacketSize = SX1276LR->RegNbRxBytes;
             RegFifoAddrPtr = RegFifoRxCurrentAddr;
             SX1278_Write_Reg( REG_LR_FIFOADDRPTR, RegFifoAddrPtr );
-            SX1276ReadFifo( RFBuffer, RegNbRxBytes );
+            SX1276ReadFifo( buffer_ptr, RegNbRxBytes );
         }
     }
     
     if( sx1278_cfg_ptr->rx_cfg.RxSingleOn == true ) // Rx single mode
     {
-        RFLRState = RFLR_STATE_RX_INIT;
+        //RFLRState = RFLR_STATE_RX_INIT;
     }
     else // Rx continuous mode
     {
-        RFLRState = RFLR_STATE_RX_RUNNING;
+        //RFLRState = RFLR_STATE_RX_RUNNING;
     }
 }
 
@@ -1523,16 +1526,46 @@ void SX1278RxFinished()
         SX1278LoRaSetRFFrequency( HoppingFrequencies[RegHopChannel & RFLR_HOPCHANNEL_CHANNEL_MASK] );
     }
     // Clear Irq
+    //SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_RXDONE);
+}
+
+void SX1278RxClearIrq()
+{
+    uint8_t RegHopChannel = 0;
+    
+    if( sx1278_cfg_ptr->rx_cfg.FreqHopOn == true )
+    {
+        SX1278_Read_Reg( REG_LR_HOPCHANNEL, &RegHopChannel );
+        SX1278LoRaSetRFFrequency( HoppingFrequencies[RegHopChannel & RFLR_HOPCHANNEL_CHANNEL_MASK] );
+    }
+
     SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_RXDONE);
 }
 
 void SX1278StartTx( void )
 {
+    uint8_t RegDioMapping1 = 0;
+    uint8_t RegDioMapping2 = 0;
+    // TxDone               RxTimeout                   FhssChangeChannel          ValidHeader  
+    RegDioMapping1 = RFLR_DIOMAPPING1_DIO0_01 | RFLR_DIOMAPPING1_DIO1_00 | RFLR_DIOMAPPING1_DIO2_00 | RFLR_DIOMAPPING1_DIO3_01;
+                                    // PllLock              Mode Ready
+    RegDioMapping2 = RFLR_DIOMAPPING2_DIO4_01 | RFLR_DIOMAPPING2_DIO5_00;
+    SX1278_Write_Reg( REG_LR_DIOMAPPING1, &RegDioMapping1);
+    SX1278_Write_Reg( REG_LR_DIOMAPPING2, &RegDioMapping2);
+
+    SX1278LoRaSetOpMode( RFLR_OPMODE_TRANSMITTER );
+}
+
+void SX1278SetTxPacket( const void *buffer_ptr, uint8_t buffer_len )
+{
+    uint8_t RegPayloadLength = 0;
+    uint8_t RegFifoTxBaseAddr = 0;
+    uint8_t RegFifoAddrPtr = 0;
     uint8_t RegIrqFlagsMask = 0;
     uint8_t RegHopPeriod = 0;
     uint8_t RegHopChannel = 0;
-    uint8_t RegDioMapping1 = 0;
-    uint8_t RegDioMapping2 = 0;
+    
+    //SX1278LoRaSetTxPacket( buffer, size );
     
     SX1278LoRaSetOpMode( RFLR_OPMODE_STANDBY );
 
@@ -1546,7 +1579,7 @@ void SX1278StartTx( void )
                             RFLR_IRQFLAGS_CADDONE |
                             //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
                             RFLR_IRQFLAGS_CADDETECTED;
-        
+
         RegHopPeriod = sx1278_cfg_ptr->tx_cfg.HopPeriod;
 
         SX1278_Read_Reg( REG_LR_HOPCHANNEL, &RegHopChannel );
@@ -1566,20 +1599,6 @@ void SX1278StartTx( void )
     }
     SX1278_Write_Reg( REG_LR_HOPPERIOD, RegHopPeriod );
     SX1278_Write_Reg( REG_LR_IRQFLAGSMASK, RegIrqFlagsMask );
-
-
-
-    RFLRState = RFLR_STATE_TX_RUNNING;
-}
-
-void SX1278SetTxPacket( const void *buffer_ptr, uint8_t buffer_len )
-{
-    uint8_t RegPayloadLength = 0;
-    uint8_t RegFifoTxBaseAddr = 0;
-    uint8_t RegFifoAddrPtr = 0;
-    uint8_t RegDioMapping1 = 0;
-    uint8_t RegDioMapping2 = 0;
-    //SX1278LoRaSetTxPacket( buffer, size );
     // Initializes the payload size
     RegPayloadLength = buffer_len;
     SX1278_Write_Reg( REG_LR_PAYLOADLENGTH, RegPayloadLength );
@@ -1591,20 +1610,13 @@ void SX1278SetTxPacket( const void *buffer_ptr, uint8_t buffer_len )
     SX1278_Write_Reg( REG_LR_FIFOADDRPTR, RegFifoAddrPtr );
     
     // Write payload buffer to LORA modem
-    SX1278_Write_FIFO( buffer_ptr, SX1276LR->RegPayloadLength );
-                                    // TxDone               RxTimeout                   FhssChangeChannel          ValidHeader         
-    RegDioMapping1 = RFLR_DIOMAPPING1_DIO0_01 | RFLR_DIOMAPPING1_DIO1_00 | RFLR_DIOMAPPING1_DIO2_00 | RFLR_DIOMAPPING1_DIO3_01;
-                                    // PllLock              Mode Ready
-    RegDioMapping2 = RFLR_DIOMAPPING2_DIO4_01 | RFLR_DIOMAPPING2_DIO5_00;
-    SX1278_Write_Reg( REG_LR_DIOMAPPING1, &RegDioMapping1);
-    SX1278_Write_Reg( REG_LR_DIOMAPPING2, &RegDioMapping2);
+    SX1278_Write_FIFO( buffer_ptr, RegPayloadLength );       
 
-    SX1278LoRaSetOpMode( RFLR_OPMODE_TRANSMITTER );
 }
 
 void SX1278TxFinished(void)
 {
-    SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_TXDONE  );
+    SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_TXDONE );
 
     SX1278LoRaSetOpMode( RFLR_OPMODE_STANDBY );
 }
