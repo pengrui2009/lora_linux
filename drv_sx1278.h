@@ -45,7 +45,7 @@ typedef struct _drv_info_st
     
     SX1278_Gpio_st sx2178_gpio;
 
-    RadioSettings_t sx1278_cfg;
+    LoRa_Config_st sx1278_cfg;
 }drv_info_st, *drv_info_st_ptr;
 
 

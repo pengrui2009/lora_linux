@@ -1464,35 +1464,29 @@ static int drv_probe(struct spi_device *spi)
 		goto ERR_EXIT3;
 	}
 
-    drv_info.sx1278_cfg.Channel                    = 433000000;
-    drv_info.sx1278_cfg.RxLoRa.Bandwidth           = 0;
-    drv_info.sx1278_cfg.RxLoRa.Datarate            = 7;
-    drv_info.sx1278_cfg.RxLoRa.LowDatarateOptimize = 0;
-    drv_info.sx1278_cfg.RxLoRa.Coderate            = 1;
-    drv_info.sx1278_cfg.RxLoRa.PreambleLen         = 8;
-    drv_info.sx1278_cfg.RxLoRa.FixLen              = false;
-    drv_info.sx1278_cfg.RxLoRa.PayloadLen          = 0;
-    drv_info.sx1278_cfg.RxLoRa.CrcOn               = true;
-    drv_info.sx1278_cfg.RxLoRa.FreqHopOn           = 0;
-    drv_info.sx1278_cfg.RxLoRa.HopPeriod           = 0;
-    drv_info.sx1278_cfg.RxLoRa.IqInverted          = false;
-    drv_info.sx1278_cfg.RxLoRa.RxContinuous        = true;
-    drv_info.sx1278_cfg.PublicNetwork       = 0;
+    drv_info.sx1278_cfg.rx_cfg.RFFrequency          = 870000000;
+    drv_info.sx1278_cfg.rx_cfg.SignalBw             = 9;
+    drv_info.sx1278_cfg.rx_cfg.SpreadingFactor      = 7;
+    drv_info.sx1278_cfg.rx_cfg.ErrorCoding          = 2;
+    drv_info.sx1278_cfg.rx_cfg.CrcOn                = true;
+    drv_info.sx1278_cfg.rx_cfg.ImplicitHeaderOn     = false;
+    drv_info.sx1278_cfg.rx_cfg.RxSingleOn           = 1;
+    drv_info.sx1278_cfg.rx_cfg.FreqHopOn            = 0;
+    drv_info.sx1278_cfg.rx_cfg.HopPeriod            = 4;
+    drv_info.sx1278_cfg.rx_cfg.RxPacketTimeout      = 100;
+    drv_info.sx1278_cfg.rx_cfg.PayloadLength        = 128;
 
-    drv_info.sx1278_cfg.Channel                    = 433000000;
-    drv_info.sx1278_cfg.TxLoRa.Power               = 20;
-    drv_info.sx1278_cfg.TxLoRa.Bandwidth           = 0;
-    drv_info.sx1278_cfg.TxLoRa.Datarate            = 7;
-    drv_info.sx1278_cfg.TxLoRa.LowDatarateOptimize = 0;
-    drv_info.sx1278_cfg.TxLoRa.Coderate            = 1;
-    drv_info.sx1278_cfg.TxLoRa.PreambleLen         = 8;
-    drv_info.sx1278_cfg.TxLoRa.FixLen              = 0;
-    drv_info.sx1278_cfg.TxLoRa.PayloadLen          = 0;
-    drv_info.sx1278_cfg.TxLoRa.CrcOn               = true;
-    drv_info.sx1278_cfg.TxLoRa.FreqHopOn           = 0;
-    drv_info.sx1278_cfg.TxLoRa.HopPeriod           = 0;
-    drv_info.sx1278_cfg.TxLoRa.IqInverted          = false;
-    drv_info.sx1278_cfg.TxLoRa.TxTimeout           = 0;
+    drv_info.sx1278_cfg.tx_cfg.RFFrequency          = 870000000;
+    drv_info.sx1278_cfg.tx_cfg.Power                = 20;
+    drv_info.sx1278_cfg.tx_cfg.SignalBw             = 9;
+    drv_info.sx1278_cfg.tx_cfg.SpreadingFactor      = 7;
+    drv_info.sx1278_cfg.tx_cfg.ErrorCoding          = 2;
+    drv_info.sx1278_cfg.tx_cfg.CrcOn                = true;
+    drv_info.sx1278_cfg.tx_cfg.ImplicitHeaderOn     = false;
+    drv_info.sx1278_cfg.tx_cfg.FreqHopOn            = 0;
+    drv_info.sx1278_cfg.tx_cfg.HopPeriod            = 4;
+    drv_info.sx1278_cfg.tx_cfg.TxPacketTimeout      = 100;
+    drv_info.sx1278_cfg.tx_cfg.PayloadLength        = 128;
 
     SX1278Init(drv_info.spi, &drv_info.sx1278_cfg);
     if (result < 0) 
