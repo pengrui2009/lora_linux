@@ -50,14 +50,16 @@ typedef struct _drv_info_st
     int flag;
 
     uint8_t           lora_recv_state;
+    uint8_t           lora_send_state;
 
+    wait_queue_head_t lora_rq;
     wait_queue_head_t lora_wq;
 
-    struct completion *lora_complete;
+    struct completion lora_complete;
     
     struct delayed_work lora_work;
     
-    SX1278_Gpio_st sx2178_gpio;
+    SX1278_Gpio_st sx1278_gpio;
 
     LoRa_Config_st sx1278_cfg;
 

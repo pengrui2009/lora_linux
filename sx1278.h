@@ -1,6 +1,13 @@
 #ifndef __SX1278_H__
 #define __SX1278_H__
 
+#include "sx1276Regs-LoRa.h"
+
+#define XTAL_FREQ                                   32000000
+#define FREQ_STEP                                   6103515625
+#define RSSI_OFFSET_LF                              -164
+#define RSSI_OFFSET_HF                              -157
+
 /*!
  * SX1276 LoRa General parameters definition
  */
@@ -42,6 +49,19 @@ typedef struct _LoRa_Config_st_
     LoRa_Rx_Config_st rx_cfg;
 }LoRa_Config_st, *LoRa_Config_st_ptr;
 
+/*!
+ * Radio hardware and global parameters
+ */
+typedef struct _SX1278_Gpio_st_
+{
+    unsigned        Reset;
+    unsigned        DIO0;
+    unsigned        DIO1;
+    unsigned        DIO2;
+    unsigned        DIO3;
+    unsigned        DIO4;
+    unsigned        DIO5;
+}SX1278_Gpio_st, *SX1278_Gpio_st_ptr;
 
 int SX1278_Read_Reg(uint8_t addr, uint8_t *data_ptr);
 
@@ -53,8 +73,6 @@ int SX1278_Write_FIFO(uint8_t *data_ptr, uint8_t data_len);
 
 void SX1278LoRaSetDefaults( void );
 
-void SX1278Init( void );
-
 void SX1278Reset( void );
 
 void SX1278SetLoRaOn( bool enable );
@@ -65,7 +83,7 @@ void SX1278SetOpMode( uint8_t opMode );
 
 uint8_t SX1278GetOpMode( void );
 
-double SX1278ReadRssi( void );
+int8_t SX1278ReadRssi( void );
 
 uint8_t SX1278ReadRxGain( void );
 
@@ -73,15 +91,15 @@ uint8_t SX1278GetPacketRxGain( void );
 
 int8_t SX1278GetPacketSnr( void );
 
-double SX1278GetPacketRssi( void );
+int8_t SX1278GetPacketRssi( void );
 
 uint32_t SX1278GetPacketAfc( void );
 
 void SX1278StartRx( void );
 
-void SX1278GetRxPacket( void *buffer, uint16_t *size );
+int SX1278GetRxPacket( uint8_t *buffer_ptr, uint8_t buffer_len);
 
-void SX1278SetTxPacket( const void *buffer, uint16_t size );
+void SX1278SetTxPacket( const uint8_t *buffer_ptr, uint8_t buffer_len );
 
 uint8_t SX1278GetRFState( void );
 
@@ -89,4 +107,41 @@ void SX1278SetRFState( uint8_t state );
 
 uint32_t SX1278Process( void );
 
+void SX1278LoRaSetRFFrequency( uint32_t freq );
+
+void SX1278LoRaSetSpreadingFactor( uint8_t factor );
+
+void SX1278LoRaSetErrorCoding( uint8_t value );
+
+void SX1278LoRaSetPacketCrcOn( bool enable );
+
+void SX1278LoRaSetSignalBandwidth( uint8_t bw );
+
+void SX1278LoRaSetImplicitHeaderOn( bool enable );
+
+void SX1278LoRaSetSymbTimeout( uint16_t value );
+
+void SX1278LoRaSetPayloadLength( uint8_t value );
+
+void SX1278LoRaSetLowDatarateOptimize( bool enable );
+
+void SX1278LoRaSetPAOutput( uint8_t outputPin );
+
+void SX1278LoRaSetPa20dBm( bool enale );
+
+void SX1278LoRaSetRFPower( int8_t power );
+
+void SX1278LoRaSetOpMode( uint8_t opMode );
+
+uint8_t SX1278LoRaGetOpMode( void );
+
+void SX1278LoRaSetNbTrigPeaks( uint8_t value );
+
+void SX1278Init(struct spi_device *spi, LoRa_Config_st_ptr cfg_ptr);
+
+void SX1278TxFinished(void);
+
+void SX1278StartTx( void );
+
+void SX1278RxClearIrq(void);
 #endif/*__SX1278_H__*/

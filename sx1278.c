@@ -1,10 +1,9 @@
 #include <linux/types.h>
+#include <linux/delay.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/spidev.h>
 #include "sx1278.h"
 
-#define RSSI_OFFSET_LF                              -164
-#define RSSI_OFFSET_HF                              -157
 
 
 static struct spi_device *spi_ptr = NULL;
@@ -12,7 +11,7 @@ static struct spi_device *spi_ptr = NULL;
 static LoRa_Config_st_ptr sx1278_cfg_ptr;
 
 static int8_t RxPacketSnrEstimate;
-static double RxPacketRssiValue;
+static int8_t RxPacketRssiValue;
 static uint8_t RxGain = 1;
 static uint32_t RxTimeoutTimer = 0;
 
@@ -143,9 +142,9 @@ int SX1278_Read_FIFO(uint8_t *data_ptr, uint8_t data_len)
     pdata = kzalloc((data_len + 1), GFP_KERNEL);
     if (!pdata) 
     {
-		result = -ENOMEM;
-		goto ERR_EXIT;
-	}
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
 
     spi_message_init(&m);
     
@@ -163,7 +162,7 @@ int SX1278_Read_FIFO(uint8_t *data_ptr, uint8_t data_len)
 
 ERR_EXIT:
     if(pdata)
-	    kfree(pdata);
+        kfree(pdata);
     return result;
 }
 
@@ -172,7 +171,7 @@ int SX1278_Write_FIFO(uint8_t *data_ptr, uint8_t data_len)
     int result = 0;
     uint8_t *pdata = NULL;
     struct spi_transfer t = {0};
-	struct spi_message m = {0};
+    struct spi_message m = {0};
 
     if((NULL == spi_ptr) || (NULL == data_ptr))
     {
@@ -183,19 +182,19 @@ int SX1278_Write_FIFO(uint8_t *data_ptr, uint8_t data_len)
     pdata = kzalloc((data_len + 1), GFP_KERNEL);
     if (!pdata) 
     {
-		result = -ENOMEM;
-		goto ERR_EXIT;
-	}
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
 
     pdata[0] = 0x80;
     memcpy(&pdata[1], data_ptr, data_len);
 
     spi_message_init(&m);
     
-	t.tx_buf = pdata;
-	t.len = (data_len + 1);
+    t.tx_buf = pdata;
+    t.len = (data_len + 1);
     
-	spi_message_add_tail(&t, &m);
+    spi_message_add_tail(&t, &m);
 
     spi_sync(spi_ptr, &m);
 
@@ -219,35 +218,35 @@ void SX1278LoRaInit( void )
     //SX1278ReadBuffer( REG_LR_OPMODE, SX1278Regs + 1, 0x70 - 1 );
 
     val = RFLR_LNA_GAIN_G1;
-    SX1278_Read_Reg(REG_LR_LNA, val);
+    SX1278_Read_Reg(REG_LR_LNA, &val);
 
     //SX1278WriteBuffer( REG_LR_OPMODE, SX1278Regs + 1, 0x70 - 1 );
 
     // set the Rx RF settings 
-    SX1278LoRaSetRFFrequency( lora_cfg.lora_rx_cfg_ptr.RFFrequency );
-    SX1278LoRaSetSpreadingFactor( lora_cfg.lora_rx_cfg_ptr.SpreadingFactor ); // SF6 only operates in implicit header mode.
-    SX1278LoRaSetErrorCoding( lora_cfg.lora_rx_cfg_ptr.ErrorCoding );
-    SX1278LoRaSetPacketCrcOn( lora_cfg.lora_rx_cfg_ptr.CrcOn );
-    SX1278LoRaSetSignalBandwidth( lora_cfg.lora_rx_cfg_ptr.SignalBw );
+    SX1278LoRaSetRFFrequency( sx1278_cfg_ptr->rx_cfg.RFFrequency );
+    SX1278LoRaSetSpreadingFactor( sx1278_cfg_ptr->rx_cfg.SpreadingFactor ); // SF6 only operates in implicit header mode.
+    SX1278LoRaSetErrorCoding( sx1278_cfg_ptr->rx_cfg.ErrorCoding );
+    SX1278LoRaSetPacketCrcOn( sx1278_cfg_ptr->rx_cfg.CrcOn );
+    SX1278LoRaSetSignalBandwidth( sx1278_cfg_ptr->rx_cfg.SignalBw );
 
-    SX1278LoRaSetImplicitHeaderOn( lora_cfg.lora_rx_cfg_ptr.ImplicitHeaderOn );
+    SX1278LoRaSetImplicitHeaderOn( sx1278_cfg_ptr->rx_cfg.ImplicitHeaderOn );
     SX1278LoRaSetSymbTimeout( 0x3FF );
-    SX1278LoRaSetPayloadLength( lora_cfg.lora_rx_cfg_ptr.PayloadLength );
+    SX1278LoRaSetPayloadLength( sx1278_cfg_ptr->rx_cfg.PayloadLength );
     SX1278LoRaSetLowDatarateOptimize( true );
 
-    if( lora_cfg.lora_tx_cfg_ptr.RFFrequency > 860000000 )
+    if( sx1278_cfg_ptr->tx_cfg.RFFrequency > 860000000 )
     {
         SX1278LoRaSetPAOutput( RFLR_PACONFIG_PASELECT_PABOOST );
         SX1278LoRaSetPa20dBm( true );
-        lora_cfg.lora_tx_cfg_ptr.Power = 20;
-        SX1278LoRaSetRFPower( lora_cfg.lora_tx_cfg_ptr.Power );
+        sx1278_cfg_ptr->tx_cfg.Power = 20;
+        SX1278LoRaSetRFPower( sx1278_cfg_ptr->tx_cfg.Power );
     }
     else
     {
         SX1278LoRaSetPAOutput( RFLR_PACONFIG_PASELECT_RFO );
         SX1278LoRaSetPa20dBm( false );
-        lora_cfg.lora_tx_cfg_ptr.Power = 14;
-        SX1278LoRaSetRFPower( lora_cfg.lora_tx_cfg_ptr.Power );
+        sx1278_cfg_ptr->tx_cfg.Power = 14;
+        SX1278LoRaSetRFPower( sx1278_cfg_ptr->tx_cfg.Power );
     } 
 
     SX1278LoRaSetOpMode( RFLR_OPMODE_STANDBY );
@@ -281,8 +280,10 @@ void SX1278LoRaSetOpMode( uint8_t opMode )
     static uint8_t opModePrev = RFLR_OPMODE_STANDBY;
     static bool antennaSwitchTxOnPrev = true;
     bool antennaSwitchTxOn = false;
+    uint8_t val = 0;
 
-    RegOpMode = SX1278LoRaGetOpMode();
+    SX1278_Read_Reg(0x01, &RegOpMode);
+    //RegOpMode = SX1278LoRaGetOpMode();
     opModePrev = RegOpMode & ~RFLR_OPMODE_MASK;
 
     if( opMode != opModePrev )
@@ -301,9 +302,18 @@ void SX1278LoRaSetOpMode( uint8_t opMode )
             //RXTX( antennaSwitchTxOn ); // Antenna switch control
         }
         RegOpMode = ( RegOpMode & RFLR_OPMODE_MASK ) | opMode;
-
         SX1278_Write_Reg( REG_LR_OPMODE, RegOpMode );        
     }
+    //RegOpMode = SX1278LoRaGetOpMode();
+}
+
+uint8_t SX1278LoRaGetModem(void)
+{
+    uint8_t RegOpMode = 0;
+
+    SX1278_Read_Reg(REG_LR_OPMODE, &RegOpMode);
+   
+    return RegOpMode & ~RFLR_MODEM_MASK;
 }
 
 uint8_t SX1278LoRaGetOpMode( void )
@@ -331,7 +341,7 @@ int8_t SX1278LoRaReadRssi( void )
     // Reads the RSSI value
     SX1278_Read_Reg( REG_LR_RSSIVALUE, &val );
 
-    if( lora_cfg.lora_rx_cfg_ptr.RFFrequency < 860000000 )  // LF
+    if( sx1278_cfg_ptr->rx_cfg.RFFrequency < 860000000 )  // LF
     {
         return RSSI_OFFSET_LF + val;
     }
@@ -351,7 +361,7 @@ int8_t SX1278LoRaGetPacketSnr( void )
     return RxPacketSnrEstimate;
 }
 
-double SX1278LoRaGetPacketRssi( void )
+int8_t SX1278LoRaGetPacketRssi( void )
 {
     return RxPacketRssiValue;
 }
@@ -360,7 +370,7 @@ void SX1278LoRaSetRFFrequency( uint32_t freq )
 {
     uint8_t val = 0;
     uint64_t temp = 0;
-    
+      
     temp = freq * 100000000;
     do_div(temp, FREQ_STEP);
     
@@ -577,8 +587,8 @@ void SX1278LoRaSetPreambleLength( uint16_t value )
     RegPreambleMsb = ( value >> 8 ) & 0x00FF;
     RegPreambleLsb = value & 0xFF;
     
-    SX1278_Write_Reg( REG_LR_PREAMBLEMSB, &RegPreambleMsb);
-    SX1278_Write_Reg( REG_LR_PREAMBLELSB, &RegPreambleLsb);
+    SX1278_Write_Reg( REG_LR_PREAMBLEMSB, RegPreambleMsb);
+    SX1278_Write_Reg( REG_LR_PREAMBLELSB, RegPreambleLsb);
 }
 
 uint16_t SX1278LoRaGetPreambleLength( void )
@@ -777,8 +787,8 @@ void SX1278LoRaSetSymbTimeout( uint16_t value )
     RegModemConfig2 = ( RegModemConfig2 & RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK ) | ( ( value >> 8 ) & ~RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK );
     RegSymbTimeoutLsb = value & 0xFF;
 
-    SX1278_Read_Reg(REG_LR_MODEMCONFIG2, RegModemConfig2);
-    SX1278_Read_Reg(REG_LR_SYMBTIMEOUTLSB, RegSymbTimeoutLsb);
+    SX1278_Write_Reg(REG_LR_MODEMCONFIG2, RegModemConfig2);
+    SX1278_Write_Reg(REG_LR_SYMBTIMEOUTLSB, RegSymbTimeoutLsb);
 }
 
 uint16_t SX1278LoRaGetSymbTimeout( void )
@@ -867,7 +877,7 @@ void SX1278LoRaSetRFState( uint8_t state )
  *                                   RF_RX_DONE, RF_RX_TIMEOUT,
  *                                   RF_TX_DONE, RF_TX_TIMEOUT]
  */
- 
+#if 0 
 uint32_t SX1278LoRaProcess( void )
 {
     uint32_t result = RF_BUSY;
@@ -1005,22 +1015,22 @@ uint32_t SX1278LoRaProcess( void )
         {    
             if( RxPacketSnrEstimate < 0 )
             {
-                RxPacketRssiValue = RSSI_OFFSET_LF + ( ( double )SX1278LR->RegPktRssiValue ) + RxPacketSnrEstimate;
+                RxPacketRssiValue = RSSI_OFFSET_LF + ( SX1278LR->RegPktRssiValue ) + RxPacketSnrEstimate;
             }
             else
             {
-                RxPacketRssiValue = RSSI_OFFSET_LF + ( 1.0666 * ( ( double )SX1278LR->RegPktRssiValue ) );
+                RxPacketRssiValue = RSSI_OFFSET_LF + (uint8_t)( (uint32_t) 10666 * SX1278LR->RegPktRssiValue / 1000 );
             }
         }
         else                                        // HF
         {    
             if( RxPacketSnrEstimate < 0 )
             {
-                RxPacketRssiValue = RSSI_OFFSET_HF + ( ( double )SX1278LR->RegPktRssiValue ) + RxPacketSnrEstimate;
+                RxPacketRssiValue = RSSI_OFFSET_HF + SX1278LR->RegPktRssiValue + RxPacketSnrEstimate;
             }
             else
             {    
-                RxPacketRssiValue = RSSI_OFFSET_HF + ( 1.0666 * ( ( double )SX1278LR->RegPktRssiValue ) );
+                RxPacketRssiValue = RSSI_OFFSET_HF + (uint8_t)((uint32_t)10666 * SX1278LR->RegPktRssiValue / 1000 );
             }
         }
 
@@ -1206,11 +1216,11 @@ uint32_t SX1278LoRaProcess( void )
     } 
     return result;
 }
-
+#endif
 void SX1278Init(struct spi_device *spi, LoRa_Config_st_ptr cfg_ptr)
 {
     bool LoRaOn = true;
-    
+    uint8_t val = 0;
     // Initialize FSK and LoRa registers structure
     spi_ptr = spi;
     sx1278_cfg_ptr = cfg_ptr;
@@ -1240,22 +1250,21 @@ void SX1278SetLoRaOn( bool enable )
     uint8_t LoRaOnState = 0;
     uint8_t RegOpMode = 0;
 
-    LoRaOnState = SX1278LoRaGetOpMode();
+    LoRaOnState = SX1278LoRaGetModem();//SX1278LoRaGetOpMode();
 
     if( LoRaOnState == enable )
     {
+        printk(KERN_ERR "%s %d the same mode:lora\n", __FUNCTION__, __LINE__);
         return;
     }
-
+     
     if( enable )
     {
-        
         SX1278LoRaSetOpMode( RFLR_OPMODE_SLEEP );
 
         SX1278_Read_Reg(REG_LR_OPMODE, &RegOpMode);
         RegOpMode = ( RegOpMode & RFLR_OPMODE_LONGRANGEMODE_MASK ) | RFLR_OPMODE_LONGRANGEMODE_ON;
         SX1278_Write_Reg( REG_LR_OPMODE, RegOpMode );
-        
         SX1278LoRaSetOpMode( RFLR_OPMODE_STANDBY );
                                         // RxDone               RxTimeout                   FhssChangeChannel           CadDone
         RegDioMapping = RFLR_DIOMAPPING1_DIO0_00 | RFLR_DIOMAPPING1_DIO1_00 | RFLR_DIOMAPPING1_DIO2_00 | RFLR_DIOMAPPING1_DIO3_00;
@@ -1278,7 +1287,8 @@ void SX1278SetLoRaOn( bool enable )
 
 bool SX1278GetLoRaOn( void )
 {
-    return LoRaOn;
+    return true;
+    //return LoRaOn;
 }
 
 void SX1278SetOpMode( uint8_t opMode )
@@ -1291,7 +1301,7 @@ uint8_t SX1278GetOpMode( void )
     return SX1278LoRaGetOpMode( );
 }
 
-double SX1278ReadRssi( void )
+int8_t SX1278ReadRssi( void )
 {
     return SX1278LoRaReadRssi( );
 }
@@ -1311,13 +1321,14 @@ int8_t SX1278GetPacketSnr( void )
     return SX1278LoRaGetPacketSnr(  );
 }
 
-double SX1278GetPacketRssi( void )
+int8_t SX1278GetPacketRssi( void )
 {
     return SX1278LoRaGetPacketRssi( );
 }
 
 uint32_t SX1278GetPacketAfc( void )
 {
+#if 0
     if( LoRaOn == false )
     {
         return SX1278FskGetPacketAfc(  );
@@ -1330,6 +1341,8 @@ uint32_t SX1278GetPacketAfc( void )
              // Block program here
          }
     }
+#endif
+    return 0;
 }
 
 void SX1278StartRx( void )
@@ -1373,8 +1386,8 @@ void SX1278StartRx( void )
                                 // CadDetected               ModeReady
     RegDioMapping2 = RFLR_DIOMAPPING2_DIO4_00 | RFLR_DIOMAPPING2_DIO5_00;
 
-    SX1278_Write_Reg( REG_LR_DIOMAPPING1, &RegDioMapping1);
-    SX1278_Write_Reg( REG_LR_DIOMAPPING2, &RegDioMapping2);
+    SX1278_Write_Reg( REG_LR_DIOMAPPING1, RegDioMapping1);
+    SX1278_Write_Reg( REG_LR_DIOMAPPING2, RegDioMapping2);
 
     if( sx1278_cfg_ptr->rx_cfg.RxSingleOn == true ) // Rx single mode
     {
@@ -1447,22 +1460,22 @@ int SX1278GetRxPacket( uint8_t *buffer_ptr, uint8_t buffer_len)
     {    
         if( RxPacketSnrEstimate < 0 )
         {
-            RxPacketRssiValue = RSSI_OFFSET_LF + ( ( double )RegPktRssiValue ) + RxPacketSnrEstimate;
+            RxPacketRssiValue = RSSI_OFFSET_LF + RegPktRssiValue + RxPacketSnrEstimate;
         }
         else
         {
-            RxPacketRssiValue = RSSI_OFFSET_LF + ( 1.0666 * ( ( double )RegPktRssiValue ) );
+            RxPacketRssiValue = RSSI_OFFSET_LF + (uint8_t)((uint32_t)10666 * RegPktRssiValue / 10000);
         }
     }
     else                                        // HF
     {    
         if( RxPacketSnrEstimate < 0 )
         {
-            RxPacketRssiValue = RSSI_OFFSET_HF + ( ( double )RegPktRssiValue ) + RxPacketSnrEstimate;
+            RxPacketRssiValue = RSSI_OFFSET_HF + RegPktRssiValue + RxPacketSnrEstimate;
         }
         else
         {    
-            RxPacketRssiValue = RSSI_OFFSET_HF + ( 1.0666 * ( ( double )RegPktRssiValue ) );
+            RxPacketRssiValue = RSSI_OFFSET_HF + (uint8_t)((uint32_t)10666 * RegPktRssiValue / 10000 );
         }
     }
 
@@ -1473,7 +1486,7 @@ int SX1278GetRxPacket( uint8_t *buffer_ptr, uint8_t buffer_len)
 
         if( sx1278_cfg_ptr->rx_cfg.ImplicitHeaderOn == true )
         {
-            SX1276ReadFifo( buffer_ptr, buffer_len );
+            SX1278_Read_FIFO( buffer_ptr, buffer_len );
         }
         else
         {
@@ -1502,7 +1515,7 @@ int SX1278GetRxPacket( uint8_t *buffer_ptr, uint8_t buffer_len)
             //RxPacketSize = SX1276LR->RegNbRxBytes;
             RegFifoAddrPtr = RegFifoRxCurrentAddr;
             SX1278_Write_Reg( REG_LR_FIFOADDRPTR, RegFifoAddrPtr );
-            SX1276ReadFifo( buffer_ptr, RegNbRxBytes );
+            SX1278_Read_FIFO( buffer_ptr, RegNbRxBytes );
         }
     }
     
@@ -1516,7 +1529,7 @@ int SX1278GetRxPacket( uint8_t *buffer_ptr, uint8_t buffer_len)
     }
 }
 
-void SX1278RxFinished()
+void SX1278RxFinished(void)
 {
     uint8_t RegHopChannel = 0;
     
@@ -1529,7 +1542,7 @@ void SX1278RxFinished()
     //SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_RXDONE);
 }
 
-void SX1278RxClearIrq()
+void SX1278RxClearIrq(void)
 {
     uint8_t RegHopChannel = 0;
     
@@ -1544,19 +1557,20 @@ void SX1278RxClearIrq()
 
 void SX1278StartTx( void )
 {
+    uint8_t reg_val = 0;
     uint8_t RegDioMapping1 = 0;
     uint8_t RegDioMapping2 = 0;
-    // TxDone               RxTimeout                   FhssChangeChannel          ValidHeader  
+                              // TxDone               RxTimeout                   FhssChangeChannel          ValidHeader  
     RegDioMapping1 = RFLR_DIOMAPPING1_DIO0_01 | RFLR_DIOMAPPING1_DIO1_00 | RFLR_DIOMAPPING1_DIO2_00 | RFLR_DIOMAPPING1_DIO3_01;
-                                    // PllLock              Mode Ready
+                              // PllLock              Mode Ready
     RegDioMapping2 = RFLR_DIOMAPPING2_DIO4_01 | RFLR_DIOMAPPING2_DIO5_00;
-    SX1278_Write_Reg( REG_LR_DIOMAPPING1, &RegDioMapping1);
-    SX1278_Write_Reg( REG_LR_DIOMAPPING2, &RegDioMapping2);
+    SX1278_Write_Reg( REG_LR_DIOMAPPING1, RegDioMapping1);
+    SX1278_Write_Reg( REG_LR_DIOMAPPING2, RegDioMapping2);
 
     SX1278LoRaSetOpMode( RFLR_OPMODE_TRANSMITTER );
 }
 
-void SX1278SetTxPacket( const void *buffer_ptr, uint8_t buffer_len )
+void SX1278SetTxPacket( const uint8_t *buffer_ptr, uint8_t buffer_len )
 {
     uint8_t RegPayloadLength = 0;
     uint8_t RegFifoTxBaseAddr = 0;
@@ -1621,7 +1635,7 @@ void SX1278TxFinished(void)
     SX1278LoRaSetOpMode( RFLR_OPMODE_STANDBY );
 }
 
-void SX1278FhssChangedChannel()
+void SX1278FhssChangedChannel(void)
 {
     uint8_t RegHopChannel = 0;
     //problem
@@ -1660,8 +1674,8 @@ void SX1278StartCad(void)
                                 // CAD Detected              ModeReady
     RegDioMapping2 = RFLR_DIOMAPPING2_DIO4_00 | RFLR_DIOMAPPING2_DIO5_00;
 
-    SX1278_Write_Reg( REG_LR_DIOMAPPING1, &RegDioMapping1);
-    SX1278_Write_Reg( REG_LR_DIOMAPPING1, &RegDioMapping2);
+    SX1278_Write_Reg( REG_LR_DIOMAPPING1, RegDioMapping1);
+    SX1278_Write_Reg( REG_LR_DIOMAPPING1, RegDioMapping2);
         
     SX1278LoRaSetOpMode( RFLR_OPMODE_CAD );
 }
@@ -1669,7 +1683,7 @@ void SX1278StartCad(void)
 void SX1278CadFinished(void)
 {
     SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDONE);
-    if( DIO4 == 1 ) // CAD Detected interrupt
+    //if( DIO4 == 1 ) // CAD Detected interrupt
     {
         // Clear Irq
         SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDETECTED  );
@@ -1677,7 +1691,7 @@ void SX1278CadFinished(void)
         //RFLRState = RFLR_STATE_RX_INIT;
         //result = RF_CHANNEL_ACTIVITY_DETECTED;
     } 
-    else
+    //else
     {    
         // The device goes in Standby Mode automatically    
         //RFLRState = RFLR_STATE_IDLE;
@@ -1696,7 +1710,8 @@ void SX1278SetRFState( uint8_t state )
 
 uint32_t SX1278Process( void )
 {
-    return SX1278LoRaProcess( );
+    //return SX1278LoRaProcess( );
+    return 0;
 }
 
 

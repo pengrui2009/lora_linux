@@ -124,6 +124,8 @@
 #define RFLR_OPMODE_FREQMODE_ACCESS_LF              0x08 // Default
 #define RFLR_OPMODE_FREQMODE_ACCESS_HF              0x00
 
+#define RFLR_MODEM_MASK                             0x7F
+
 #define RFLR_OPMODE_MASK                            0xF8
 #define RFLR_OPMODE_SLEEP                           0x00
 #define RFLR_OPMODE_STANDBY                         0x01 // Default
