@@ -89,7 +89,7 @@ static dev_t drv_dev_num = MKDEV(DRV_MAJOR, 0);
 static struct cdev drv_cdev;
 static struct class *drv_class;
 
-static drv_info_st drv_info;
+//static drv_info_st drv_info;
 
 static unsigned bufsiz = 4096;
 
@@ -111,6 +111,10 @@ int Lora_IoIrqDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr);
 static void lora_work_func(struct work_struct *w)
 {
     uint8_t i,val = 0;
+
+    struct delayed_work *dw = to_delayed_work(w);
+    drv_info_st_ptr lora_ptr = container_of(dw, drv_info_st, delayed_work);
+    
     switch( drv_info.sx1278_state )
     {
     case RF_RX_RUNNING:
@@ -1481,13 +1485,14 @@ static int drv_probe(struct spi_device *spi)
     int result = 0;
     unsigned char mode[2] = {0};
     drv_info_st_ptr drv_info_ptr;
+    lora_info_st_ptr lora_ptr = NULL;
     unsigned long        minor;
     struct device_node *np = spi->dev.of_node;
 
     /* Allocate driver data */
-    //drv_info_ptr = kzalloc(sizeof(*drv_info_ptr), GFP_KERNEL);
-    //if(!drv_info_ptr)
-    //    return -ENOMEM;
+    lora_ptr = kzalloc(sizeof(*lora_ptr), GFP_KERNEL);
+    if(!lora_ptr)
+        return -ENOMEM;
     
     drv_info.sx1278_gpio.DIO0 = of_get_named_gpio(np, "dio0-gpios", 0);
     if(drv_info.sx1278_gpio.DIO0 < 0) 
@@ -1573,6 +1578,7 @@ static int drv_probe(struct spi_device *spi)
     init_completion(&drv_info.lora_complete);
     init_waitqueue_head(&(drv_info.lora_wq));
     INIT_DELAYED_WORK(&drv_info.lora_work, lora_work_func);
+    INIT_WORK(&drv_info.lora_work, lora_work_func);
 
     if (result == 0)
         spi_set_drvdata(spi, drv_info_ptr);

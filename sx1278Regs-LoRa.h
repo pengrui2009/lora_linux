@@ -25,7 +25,7 @@
 
 /*!
  * ============================================================================
- * SX1276 Internal registers Address
+ * SX1278 Internal registers Address
  * ============================================================================
  */
 #define REG_LR_FIFO                                 0x00
@@ -101,7 +101,7 @@
 
 /*!
  * ============================================================================
- * SX1276 LoRa bits control definition
+ * SX1278 LoRa bits control definition
  * ============================================================================
  */
 
@@ -123,6 +123,8 @@
 #define RFLR_OPMODE_FREQMODE_ACCESS_MASK            0xF7
 #define RFLR_OPMODE_FREQMODE_ACCESS_LF              0x08 // Default
 #define RFLR_OPMODE_FREQMODE_ACCESS_HF              0x00
+
+#define RFLR_MODEM_MASK                             0x7F
 
 #define RFLR_OPMODE_MASK                            0xF8
 #define RFLR_OPMODE_SLEEP                           0x00

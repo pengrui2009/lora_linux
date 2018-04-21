@@ -32,7 +32,7 @@ typedef enum
 }RadioState_en;
 
 
-typedef struct _drv_info_st 
+typedef struct _lora_info_st 
 {
     char        	*drv_name;
     dev_t		devt;
@@ -56,15 +56,17 @@ typedef struct _drv_info_st
     wait_queue_head_t lora_wq;
 
     struct completion lora_complete;
-    
-    struct delayed_work lora_work;
+    /*the tx timeout handler work*/
+    struct delayed_work lora_delay_work;
+    /*the work of irq bottom handler*/
+    strcut work_struct lora_work;
     
     SX1278_Gpio_st sx1278_gpio;
 
     LoRa_Config_st sx1278_cfg;
 
     RadioState_en sx1278_state;
-}drv_info_st, *drv_info_st_ptr;
+}lora_info_st, *lora_info_st_ptr;
 
 
 

@@ -1,6 +1,8 @@
 #ifndef __SX1278_H__
 #define __SX1278_H__
 
+#include <linux/spi/spi.h>
+#include <linux/spi/spidev.h>
 #include "sx1276Regs-LoRa.h"
 
 #define XTAL_FREQ                                   32000000
@@ -11,7 +13,7 @@
 /*!
  * SX1276 LoRa General parameters definition
  */
-typedef struct _LoRa_Tx_Config_st_
+typedef struct _SX1278_Tx_Config_st_
 {
     uint32_t RFFrequency;
     int8_t Power;
@@ -25,9 +27,9 @@ typedef struct _LoRa_Tx_Config_st_
     uint8_t HopPeriod;                  // Hops every frequency hopping period symbols
     uint32_t TxPacketTimeout;
     uint8_t PayloadLength;
-}LoRa_Tx_Config_st, *LoRa_Tx_Config_st_ptr;
+}SX1278_Tx_Config_st, *SX1278_Tx_Config_st_ptr;
 
-typedef struct _LoRa_Rx_Config_st_
+typedef struct _SX1278_Rx_Config_st_
 {
     uint32_t RFFrequency;
     uint8_t SignalBw;                   // LORA [0: 7.8 kHz, 1: 10.4 kHz, 2: 15.6 kHz, 3: 20.8 kHz, 4: 31.2 kHz,
@@ -41,14 +43,20 @@ typedef struct _LoRa_Rx_Config_st_
     uint8_t HopPeriod;                  // Hops every frequency hopping period symbols
     uint32_t RxPacketTimeout;
     uint8_t PayloadLength;
-}LoRa_Rx_Config_st, *LoRa_Rx_Config_st_ptr;
+}SX1278_Rx_Config_st, *SX1278_Rx_Config_st_ptr;
 
-typedef struct _LoRa_Config_st_
+typedef struct _SX1278_Cfg_st_
 {
-    LoRa_Tx_Config_st tx_cfg;
-    LoRa_Rx_Config_st rx_cfg;
-}LoRa_Config_st, *LoRa_Config_st_ptr;
+    SX1278_Tx_Config_st tx_cfg;
+    SX1278_Rx_Config_st rx_cfg;
+}SX1278_Cfg_st, *SX1278_Cfg_st_ptr;
 
+typedef struct _SX1278_st_
+{
+    struct spi_device *spi_ptr;
+    
+    SX1278_Cfg_st cfg;
+}SX1278_st, *SX1278_st_ptr;
 /*!
  * Radio hardware and global parameters
  */
@@ -63,85 +71,85 @@ typedef struct _SX1278_Gpio_st_
     unsigned        DIO5;
 }SX1278_Gpio_st, *SX1278_Gpio_st_ptr;
 
-int SX1278_Read_Reg(uint8_t addr, uint8_t *data_ptr);
+int SX1278_Read_Reg(SX1278_st_ptr sx1278_ptr, uint8_t addr, uint8_t *data_ptr);
 
-int SX1278_Write_Reg(uint8_t addr, uint8_t data);
+int SX1278_Write_Reg(SX1278_st_ptr sx1278_ptr, uint8_t addr, uint8_t data);
 
-int SX1278_Read_FIFO(uint8_t *data_ptr, uint8_t data_len);
+int SX1278_Read_FIFO(SX1278_st_ptr sx1278_ptr, uint8_t *data_ptr, uint8_t data_len);
 
-int SX1278_Write_FIFO(uint8_t *data_ptr, uint8_t data_len);
+int SX1278_Write_FIFO(SX1278_st_ptr sx1278_ptr, uint8_t *data_ptr, uint8_t data_len);
 
-void SX1278LoRaSetDefaults( void );
+int SX1278LoRaSetDefaults(SX1278_st_ptr sx1278_ptr);
 
-void SX1278Reset( void );
+int SX1278Reset(SX1278_st_ptr sx1278_ptr);
 
-void SX1278SetLoRaOn( bool enable );
+int SX1278SetLoRaOn(SX1278_st_ptr sx1278_ptr, bool enable);
 
-bool SX1278GetLoRaOn( void );
+int SX1278GetLoRaOn(SX1278_st_ptr sx1278_ptr, bool *LoRaOn);
 
-void SX1278SetOpMode( uint8_t opMode );
+int SX1278SetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t opMode);
 
-uint8_t SX1278GetOpMode( void );
+int SX1278GetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t *opmode);
 
-int8_t SX1278ReadRssi( void );
+int SX1278ReadRssi(SX1278_st_ptr sx1278_ptr, int8_t *rssi);
 
-uint8_t SX1278ReadRxGain( void );
+int SX1278ReadRxGain(SX1278_st_ptr sx1278_ptr, uint8_t *rxgain);
 
-uint8_t SX1278GetPacketRxGain( void );
+int SX1278GetPacketRxGain(SX1278_st_ptr sx1278_ptr, uint8_t *PacketRxGain);
 
-int8_t SX1278GetPacketSnr( void );
+int SX1278GetPacketSnr(SX1278_st_ptr sx1278_ptr, int8_t *pakcetsnr);
 
-int8_t SX1278GetPacketRssi( void );
+int SX1278GetPacketRssi(SX1278_st_ptr sx1278_ptr, int8_t *packetrssi);
 
-uint32_t SX1278GetPacketAfc( void );
+int SX1278GetPacketAfc(SX1278_st_ptr sx1278_ptr, uint32_t *packetafc);
 
-void SX1278StartRx( void );
+int SX1278StartRx(SX1278_st_ptr sx1278_ptr);
 
-int SX1278GetRxPacket( uint8_t *buffer_ptr, uint8_t buffer_len);
+int SX1278GetRxPacket(SX1278_st_ptr sx1278_ptr, uint8_t *buffer_ptr, uint8_t buffer_len);
 
-void SX1278SetTxPacket( const uint8_t *buffer_ptr, uint8_t buffer_len );
+int SX1278SetTxPacket(SX1278_st_ptr sx1278_ptr, const uint8_t *buffer_ptr, uint8_t buffer_len);
 
-uint8_t SX1278GetRFState( void );
+int SX1278GetRFState(SX1278_st_ptr sx1278_ptr, uint8_t *RFState);
 
-void SX1278SetRFState( uint8_t state );
+int SX1278SetRFState(SX1278_st_ptr sx1278_ptr, uint8_t state);
 
-uint32_t SX1278Process( void );
+int SX1278Process(SX1278_st_ptr sx1278_ptr);
 
-void SX1278LoRaSetRFFrequency( uint32_t freq );
+int SX1278LoRaSetRFFrequency(SX1278_st_ptr sx1278_ptr, uint32_t freq);
 
-void SX1278LoRaSetSpreadingFactor( uint8_t factor );
+int SX1278LoRaSetSpreadingFactor(SX1278_st_ptr sx1278_ptr, uint8_t factor);
 
-void SX1278LoRaSetErrorCoding( uint8_t value );
+int SX1278LoRaSetErrorCoding(SX1278_st_ptr sx1278_ptr, uint8_t value);
 
-void SX1278LoRaSetPacketCrcOn( bool enable );
+int SX1278LoRaSetPacketCrcOn(SX1278_st_ptr sx1278_ptr, bool enable);
 
-void SX1278LoRaSetSignalBandwidth( uint8_t bw );
+int SX1278LoRaSetSignalBandwidth(SX1278_st_ptr sx1278_ptr, uint8_t bw);
 
-void SX1278LoRaSetImplicitHeaderOn( bool enable );
+int SX1278LoRaSetImplicitHeaderOn(SX1278_st_ptr sx1278_ptr, bool enable);
 
-void SX1278LoRaSetSymbTimeout( uint16_t value );
+int SX1278LoRaSetSymbTimeout(SX1278_st_ptr sx1278_ptr, uint16_t value);
 
-void SX1278LoRaSetPayloadLength( uint8_t value );
+int SX1278LoRaSetPayloadLength(SX1278_st_ptr sx1278_ptr, uint8_t value);
 
-void SX1278LoRaSetLowDatarateOptimize( bool enable );
+int SX1278LoRaSetLowDatarateOptimize(SX1278_st_ptr sx1278_ptr, bool enable);
 
-void SX1278LoRaSetPAOutput( uint8_t outputPin );
+int SX1278LoRaSetPAOutput(SX1278_st_ptr sx1278_ptr, uint8_t outputPin);
 
-void SX1278LoRaSetPa20dBm( bool enale );
+int SX1278LoRaSetPa20dBm(SX1278_st_ptr sx1278_ptr, bool enale);
 
-void SX1278LoRaSetRFPower( int8_t power );
+int SX1278LoRaSetRFPower(SX1278_st_ptr sx1278_ptr, int8_t power);
 
-void SX1278LoRaSetOpMode( uint8_t opMode );
+int SX1278LoRaSetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t opMode);
 
-uint8_t SX1278LoRaGetOpMode( void );
+int SX1278LoRaGetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t *opmode);
 
-void SX1278LoRaSetNbTrigPeaks( uint8_t value );
+int SX1278LoRaSetNbTrigPeaks(SX1278_st_ptr sx1278_ptr, uint8_t value);
 
-void SX1278Init(struct spi_device *spi, LoRa_Config_st_ptr cfg_ptr);
+int SX1278Init(SX1278_st_ptr sx1278_ptr);
 
-void SX1278TxFinished(void);
+int SX1278TxFinished(SX1278_st_ptr sx1278_ptr);
 
-void SX1278StartTx( void );
+int SX1278StartTx(SX1278_st_ptr sx1278_ptr);
 
-void SX1278RxClearIrq(void);
+int SX1278RxClearIrq(SX1278_st_ptr sx1278_ptr);
 #endif/*__SX1278_H__*/

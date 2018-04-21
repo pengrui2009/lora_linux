@@ -25,7 +25,7 @@
 
 /*!
  * ============================================================================
- * SX1276 Internal registers Address
+ * SX1278 Internal registers Address
  * ============================================================================
  */
 #define REG_FIFO                                    0x00
@@ -119,7 +119,7 @@
 
 /*!
  * ============================================================================
- * SX1276 FSK bits control definition
+ * SX1278 FSK bits control definition
  * ============================================================================
  */
 
@@ -1139,4 +1139,4 @@
 #define RF_PLL_BANDWIDTH_225                        0x80
 #define RF_PLL_BANDWIDTH_300                        0xC0  // Default
 
-#endif // __SX1276_REGS_FSK_H__
+#endif // __SX1278_REGS_FSK_H__
