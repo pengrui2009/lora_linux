@@ -3,9 +3,12 @@
 
 #include <linux/spi/spi.h>
 #include <linux/spi/spidev.h>
-#include "sx1276Regs-LoRa.h"
+#include "sx1278Regs-LoRa.h"
 
 #define XTAL_FREQ                                   32000000
+
+#define RF_MID_BAND_THRESH                          525000000
+
 #define FREQ_STEP                                   6103515625
 #define RSSI_OFFSET_LF                              -164
 #define RSSI_OFFSET_HF                              -157
@@ -29,6 +32,8 @@ typedef struct _SX1278_Tx_Config_st_
     uint8_t PayloadLength;
 }SX1278_Tx_Config_st, *SX1278_Tx_Config_st_ptr;
 
+#define SX1278_TX_CONFIG_ST_LEN     sizeof(SX1278_Tx_Config_st)
+
 typedef struct _SX1278_Rx_Config_st_
 {
     uint32_t RFFrequency;
@@ -44,6 +49,8 @@ typedef struct _SX1278_Rx_Config_st_
     uint32_t RxPacketTimeout;
     uint8_t PayloadLength;
 }SX1278_Rx_Config_st, *SX1278_Rx_Config_st_ptr;
+
+#define SX1278_RX_CONFIG_ST_LEN     sizeof(SX1278_Rx_Config_st)
 
 typedef struct _SX1278_Cfg_st_
 {
@@ -62,22 +69,22 @@ typedef struct _SX1278_st_
  */
 typedef struct _SX1278_Gpio_st_
 {
-    unsigned        Reset;
-    unsigned        DIO0;
-    unsigned        DIO1;
-    unsigned        DIO2;
-    unsigned        DIO3;
-    unsigned        DIO4;
-    unsigned        DIO5;
+    int        Reset;
+    int        DIO0;
+    int        DIO1;
+    int        DIO2;
+    int        DIO3;
+    int        DIO4;
+    int        DIO5;
 }SX1278_Gpio_st, *SX1278_Gpio_st_ptr;
 
-int SX1278_Read_Reg(SX1278_st_ptr sx1278_ptr, uint8_t addr, uint8_t *data_ptr);
+int SX1278_Read_Reg(struct spi_device *spi_ptr, uint8_t addr, uint8_t *data_ptr);
 
-int SX1278_Write_Reg(SX1278_st_ptr sx1278_ptr, uint8_t addr, uint8_t data);
+int SX1278_Write_Reg(struct spi_device *spi_ptr, uint8_t addr, uint8_t data);
 
-int SX1278_Read_FIFO(SX1278_st_ptr sx1278_ptr, uint8_t *data_ptr, uint8_t data_len);
+int SX1278_Read_FIFO(struct spi_device *spi_ptr, uint8_t *data_ptr, uint8_t data_len);
 
-int SX1278_Write_FIFO(SX1278_st_ptr sx1278_ptr, uint8_t *data_ptr, uint8_t data_len);
+int SX1278_Write_FIFO(struct spi_device *spi_ptr, uint8_t *data_ptr, uint8_t data_len);
 
 int SX1278LoRaSetDefaults(SX1278_st_ptr sx1278_ptr);
 
@@ -107,7 +114,7 @@ int SX1278StartRx(SX1278_st_ptr sx1278_ptr);
 
 int SX1278GetRxPacket(SX1278_st_ptr sx1278_ptr, uint8_t *buffer_ptr, uint8_t buffer_len);
 
-int SX1278SetTxPacket(SX1278_st_ptr sx1278_ptr, const uint8_t *buffer_ptr, uint8_t buffer_len);
+int SX1278SetTxPacket(SX1278_st_ptr sx1278_ptr, uint8_t *buffer_ptr, uint8_t buffer_len);
 
 int SX1278GetRFState(SX1278_st_ptr sx1278_ptr, uint8_t *RFState);
 
@@ -151,5 +158,13 @@ int SX1278TxFinished(SX1278_st_ptr sx1278_ptr);
 
 int SX1278StartTx(SX1278_st_ptr sx1278_ptr);
 
-int SX1278RxClearIrq(SX1278_st_ptr sx1278_ptr);
+int SX1278LoRaClearIrq(SX1278_st_ptr sx1278_ptr, uint8_t mask);
+
+int SX1278LoRaCheckPayloadCrc(SX1278_st_ptr sx1278_ptr);
+
+int SX1278LoRaGetPacketSnrandRssi(SX1278_st_ptr sx1278_ptr, uint32_t freq, int8_t *snr, int16_t *rssi);
+
+int SX1278LoRaGetTxPacketTimeout(SX1278_st_ptr sx1278_ptr, uint32_t *TxPacketTime);
+
+int SX1278StartCad(SX1278_st_ptr sx1278_ptr);
 #endif/*__SX1278_H__*/
