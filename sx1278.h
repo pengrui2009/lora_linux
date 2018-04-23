@@ -4,6 +4,7 @@
 #include <linux/spi/spi.h>
 #include <linux/spi/spidev.h>
 #include "sx1278Regs-LoRa.h"
+#include "sx1278Regs-Fsk.h"
 
 #define XTAL_FREQ                                   32000000
 
@@ -12,6 +13,26 @@
 #define FREQ_STEP                                   6103515625
 #define RSSI_OFFSET_LF                              -164
 #define RSSI_OFFSET_HF                              -157
+
+/*!
+ * Radio driver supported modems
+ */
+typedef enum
+{
+    MODEM_FSK = 0,
+    MODEM_LORA,
+}RadioModems_en;
+
+
+/*!
+ * \brief Radio registers definition
+ */
+typedef struct
+{
+    RadioModems_en modem;
+    uint16_t       addr;                             //!< The address of the register
+    uint8_t        value;                            //!< The value of the register
+}RadioRegisters_st;
 
 /*!
  * SX1276 LoRa General parameters definition
@@ -24,9 +45,11 @@ typedef struct _SX1278_Tx_Config_st_
                                         // 5: 41.6 kHz, 6: 62.5 kHz, 7: 125 kHz, 8: 250 kHz, 9: 500 kHz, other: Reserved]  
     uint8_t SpreadingFactor;            // LORA [6: 64, 7: 128, 8: 256, 9: 512, 10: 1024, 11: 2048, 12: 4096  chips]
     uint8_t ErrorCoding;                // LORA [1: 4/5, 2: 4/6, 3: 4/7, 4: 4/8]
+    uint16_t PreambleLen;
     bool CrcOn;                         // [0: OFF, 1: ON]
     bool ImplicitHeaderOn;              // [0: OFF, 1: ON]
     bool FreqHopOn;                     // [0: OFF, 1: ON]
+    bool IqInverted;
     uint8_t HopPeriod;                  // Hops every frequency hopping period symbols
     uint32_t TxPacketTimeout;
     uint8_t PayloadLength;
@@ -39,12 +62,14 @@ typedef struct _SX1278_Rx_Config_st_
     uint32_t RFFrequency;
     uint8_t SignalBw;                   // LORA [0: 7.8 kHz, 1: 10.4 kHz, 2: 15.6 kHz, 3: 20.8 kHz, 4: 31.2 kHz,
                                         // 5: 41.6 kHz, 6: 62.5 kHz, 7: 125 kHz, 8: 250 kHz, 9: 500 kHz, other: Reserved]  
-    uint8_t SpreadingFactor;            // LORA [6: 64, 7: 128, 8: 256, 9: 512, 10: 1024, 11: 2048, 12: 4096  chips]
-    uint8_t ErrorCoding;                // LORA [1: 4/5, 2: 4/6, 3: 4/7, 4: 4/8]
+    uint8_t  SpreadingFactor;            // LORA [6: 64, 7: 128, 8: 256, 9: 512, 10: 1024, 11: 2048, 12: 4096  chips]
+    uint8_t  ErrorCoding;                // LORA [1: 4/5, 2: 4/6, 3: 4/7, 4: 4/8]
+    uint16_t PreambleLen;
     bool CrcOn;                         // [0: OFF, 1: ON]
     bool ImplicitHeaderOn;              // [0: OFF, 1: ON]
     bool RxSingleOn;                    // [0: Continuous, 1 Single]
     bool FreqHopOn;                     // [0: OFF, 1: ON]
+    bool IqInverted;
     uint8_t HopPeriod;                  // Hops every frequency hopping period symbols
     uint32_t RxPacketTimeout;
     uint8_t PayloadLength;
@@ -167,4 +192,12 @@ int SX1278LoRaGetPacketSnrandRssi(SX1278_st_ptr sx1278_ptr, uint32_t freq, int8_
 int SX1278LoRaGetTxPacketTimeout(SX1278_st_ptr sx1278_ptr, uint32_t *TxPacketTime);
 
 int SX1278StartCad(SX1278_st_ptr sx1278_ptr);
+
+int SX1278RxChainCalibration(SX1278_st_ptr sx1278_ptr);
+
+int SX1276SetModem(SX1278_st_ptr sx1278_ptr, RadioModems_en modem);
+
+int SX1278SetRxConfig(SX1278_st_ptr sx1278_ptr);
+
+int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr);
 #endif/*__SX1278_H__*/

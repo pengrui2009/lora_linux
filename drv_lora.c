@@ -128,8 +128,9 @@ irqreturn_t SX1278_OnDio0Irq(int irq, void *dev_id)
             drv_info.sx1278_state = RF_IDLE;
             //complete(&drv_info.lora_complete);
             drv_info.lora_send_state = 1;
-            wake_up_interruptible(&drv_info.lora_wq); 
-#endif            
+#endif           
+            schedule_work(&lora_ptr->lora_work);
+            
             break;
         }
     default:
@@ -933,7 +934,7 @@ static void lora_delaywork_func(struct work_struct *w)
     case RF_TX_RUNNING:
 
         lora_ptr->lora_send_state = 2;
-        wake_up_interruptible(&lora_ptr->lora_rq);
+        wake_up_interruptible(&lora_ptr->lora_wq);
         break;
     default:
         break;
@@ -947,6 +948,7 @@ ERR_EXIT:
 static void lora_work_func(struct work_struct *dw)
 {
     int result = 0;
+    uint8_t regval = 0;
     lora_info_st_ptr lora_ptr = container_of(dw, lora_info_st, lora_work);
     
     switch(lora_ptr->state)
@@ -977,6 +979,17 @@ static void lora_work_func(struct work_struct *dw)
         wake_up_interruptible(&lora_ptr->lora_rq);
         break;
     case RF_TX_RUNNING:
+        //Clear Irq
+        result = SX1278_Read_Reg(lora_ptr->sx1278.spi_ptr, RFLR_IRQFLAGS_TXDONE, &regval);
+        printk(KERN_ERR "regval:0x%0x\n", regval);
+        result = SX1278LoRaClearIrq(&lora_ptr->sx1278, RFLR_IRQFLAGS_TXDONE);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
+        
+        lora_ptr->lora_send_state = 1; 
+        wake_up_interruptible(&lora_ptr->lora_wq); 
         break;
     default:
         break;
@@ -990,6 +1003,7 @@ ERR_EXIT:
 static int drv_open(struct inode *inode, struct file *filp)
 {
     int result = 0;
+    uint8_t regval = 0;
     lora_info_st_ptr lora_ptr = NULL;
     
     mutex_lock(&device_list_lock);
@@ -1025,27 +1039,44 @@ static int drv_open(struct inode *inode, struct file *filp)
     {
         goto ERR_EXIT1;
     }
-
-    result = lora_IoIrqInit(&lora_ptr->gpio);
-    if (result < 0) 
-    {
-        goto ERR_EXIT2;
-    }
-
+    
     result = lora_Reset(&lora_ptr->gpio);
     if (result < 0) 
     {
         goto ERR_EXIT3;
     }
 
+    result = SX1278RxChainCalibration(&lora_ptr->sx1278);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+
+    result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_SLEEP);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+
+    result = SX1278_Read_Reg(lora_ptr->sx1278.spi_ptr, RFLR_IRQFLAGS_TXDONE, &regval);
+
+    printk(KERN_ERR "regval irq:0x%0x\n", regval);
+    result = lora_IoIrqInit(&lora_ptr->gpio);
+    if (result < 0) 
+    {
+        goto ERR_EXIT2;
+    }
+
     lora_ptr->sx1278.cfg.rx_cfg.RFFrequency          = 470300000;
     lora_ptr->sx1278.cfg.rx_cfg.SignalBw             = 0;
     lora_ptr->sx1278.cfg.rx_cfg.SpreadingFactor      = 7;
     lora_ptr->sx1278.cfg.rx_cfg.ErrorCoding          = 2;
+    lora_ptr->sx1278.cfg.rx_cfg.PreambleLen          = 8;
     lora_ptr->sx1278.cfg.rx_cfg.CrcOn                = true;
     lora_ptr->sx1278.cfg.rx_cfg.ImplicitHeaderOn     = false;
     lora_ptr->sx1278.cfg.rx_cfg.RxSingleOn           = 1;
     lora_ptr->sx1278.cfg.rx_cfg.FreqHopOn            = 0;
+    lora_ptr->sx1278.cfg.rx_cfg.IqInverted           = false;
     lora_ptr->sx1278.cfg.rx_cfg.HopPeriod            = 4;
     lora_ptr->sx1278.cfg.rx_cfg.RxPacketTimeout      = 5;
     lora_ptr->sx1278.cfg.rx_cfg.PayloadLength        = 128;
@@ -1055,9 +1086,11 @@ static int drv_open(struct inode *inode, struct file *filp)
     lora_ptr->sx1278.cfg.tx_cfg.SignalBw             = 0;
     lora_ptr->sx1278.cfg.tx_cfg.SpreadingFactor      = 7;
     lora_ptr->sx1278.cfg.tx_cfg.ErrorCoding          = 2;
+    lora_ptr->sx1278.cfg.tx_cfg.PreambleLen          = 8;
     lora_ptr->sx1278.cfg.tx_cfg.CrcOn                = true;
     lora_ptr->sx1278.cfg.tx_cfg.ImplicitHeaderOn     = false;
     lora_ptr->sx1278.cfg.tx_cfg.FreqHopOn            = 0;
+    lora_ptr->sx1278.cfg.tx_cfg.IqInverted           = false;
     lora_ptr->sx1278.cfg.tx_cfg.HopPeriod            = 4;
     lora_ptr->sx1278.cfg.tx_cfg.TxPacketTimeout      = 5;
     lora_ptr->sx1278.cfg.tx_cfg.PayloadLength        = 128;
@@ -1068,9 +1101,25 @@ static int drv_open(struct inode *inode, struct file *filp)
         goto ERR_EXIT3;
     }
 
-    lora_ptr->state = RF_RX_RUNNING;
+    lora_ptr->state = RF_IDLE;
+
+    result = SX1278SetRxConfig(&lora_ptr->sx1278);
+    if (result < 0) 
+    {
+        goto ERR_EXIT3;
+    }
 
     result = SX1278StartRx(&lora_ptr->sx1278);
+    if (result < 0) 
+    {
+        goto ERR_EXIT3;
+    }
+
+    lora_ptr->state = RF_RX_RUNNING;
+
+    //timeout handler
+    //schedule_delayed_work(struct delayed_work * dwork,unsigned long delay);
+    result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_RECEIVER);
     if (result < 0) 
     {
         goto ERR_EXIT3;
@@ -1118,13 +1167,23 @@ static ssize_t drv_read(struct file *filp, char __user *buf, size_t count, loff_
         goto ERR_EXIT;
     }
     
-    if( lora_ptr->sx1278.cfg.rx_cfg.RxSingleOn == true ) // Rx single mode
+    if(lora_ptr->sx1278.cfg.rx_cfg.RxSingleOn == false) // Rx single mode
     {
         SX1278StartRx(&lora_ptr->sx1278);
+
+        lora_ptr->state = RF_RX_RUNNING;
+
+        //timeout handler
+        //schedule_delayed_work(struct delayed_work * dwork,unsigned long delay);
+        result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_RECEIVER);
+        if (result < 0) 
+        {
+            goto ERR_EXIT;
+        }
     }
     else // Rx continuous mode
     {
-        //RFLRState = RFLR_STATE_RX_RUNNING;
+        lora_ptr->state = RF_IDLE;
     }
 
     if(lora_ptr->buffer)
@@ -1153,38 +1212,71 @@ static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count
         result= -ENOMEM;
         goto ERR_EXIT;
     }
-
+    mutex_lock(&lora_ptr->lora_mutex);
     result = copy_from_user(lora_ptr->buffer, buf, count);
     if (result == 0)
     {
+        result = SX1278SetTxConfig(&lora_ptr->sx1278);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
+        
         result = SX1278SetTxPacket(&lora_ptr->sx1278, lora_ptr->buffer, count);
         if(result < 0)
         {
             goto ERR_EXIT;
         }
 
-        lora_ptr->state = RF_TX_RUNNING;
         result = SX1278StartTx(&lora_ptr->sx1278);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
         
-        SX1278LoRaGetTxPacketTimeout(&lora_ptr->sx1278, &timeout);
         
+        result = SX1278LoRaGetTxPacketTimeout(&lora_ptr->sx1278, &timeout);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
+        lora_ptr->state = RF_TX_RUNNING;
         schedule_delayed_work(&lora_ptr->lora_delaywork, timeout * HZ);
 
+        result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_TRANSMITTER);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }        
+        
         wait_event_interruptible(lora_ptr->lora_wq, lora_ptr->lora_send_state);
+        printk(KERN_ERR "send data flag:%d\n", lora_ptr->lora_send_state);
+        
+	    lora_ptr->lora_send_state = 0;
+        //SX1278TxFinished(&lora_ptr->sx1278);
+        lora_ptr->state = RF_IDLE;
+
         if(lora_ptr->lora_send_state == 2)
         {
             //tx timeout
             lora_ptr->lora_send_state = 0;
             result = -ETIMEDOUT;
-            goto ERR_EXIT;
         }
         
-        lora_ptr->lora_send_state = 0;
-        SX1278TxFinished(&lora_ptr->sx1278);
-        lora_ptr->state = RF_IDLE;
     }
 
-    SX1278StartRx(&lora_ptr->sx1278);
+    mutex_unlock(&lora_ptr->lora_mutex);
+    result = SX1278SetRxConfig(&lora_ptr->sx1278);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+
+    result = SX1278StartRx(&lora_ptr->sx1278);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
     lora_ptr->state =RF_RX_RUNNING;
     
 ERR_EXIT:
@@ -1486,10 +1578,6 @@ static const struct file_operations drv_fops = {
  */
 
 /*-------------------------------------------------------------------------*/
-
-
-
-
 static int drv_probe(struct spi_device *spi_ptr)
 {
     int result = 0;
@@ -1510,7 +1598,6 @@ static int drv_probe(struct spi_device *spi_ptr)
     /* Initialize the driver data */
     //spin_lock_init(&lora_ptr->spi_lock);
     //mutex_init(&lora_ptr->buf_lock);
-    //mutex_init(&lora_ptr->lora_mutex);
 
     INIT_LIST_HEAD(&lora_ptr->device_entry);
 
@@ -1531,8 +1618,10 @@ static int drv_probe(struct spi_device *spi_ptr)
             list_add(&lora_ptr->device_entry, &device_list);
 
             //初始化等待队列
+            mutex_init(&lora_ptr->lora_mutex);
             init_completion(&lora_ptr->lora_completion);
             init_waitqueue_head(&lora_ptr->lora_wq);
+            init_waitqueue_head(&lora_ptr->lora_rq);
             INIT_DELAYED_WORK(&lora_ptr->lora_delaywork, lora_delaywork_func);
             INIT_WORK(&lora_ptr->lora_work, lora_work_func);
             
