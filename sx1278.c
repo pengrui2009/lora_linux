@@ -2509,7 +2509,7 @@ int SX1276SetModem(SX1278_st_ptr sx1278_ptr, RadioModems_en modem)
         curmodem = MODEM_FSK;
     }
 
-    if(MODEM_FSK == modem)
+    if(curmodem == modem)
     {
         goto ERR_EXIT;
     }
@@ -2946,6 +2946,7 @@ ERR_EXIT:
 
 uint8_t SX1276GetPaSelect(uint32_t channel)
 {
+#if 0
     if( channel > RF_MID_BAND_THRESH )
     {
         return RF_PACONFIG_PASELECT_PABOOST;
@@ -2954,6 +2955,8 @@ uint8_t SX1276GetPaSelect(uint32_t channel)
     {
         return RF_PACONFIG_PASELECT_RFO;
     }
+#endif
+    return 0x80;
 }
 
 int SX1278SetRfTxPower(SX1278_st_ptr sx1278_ptr, int power)
@@ -3065,7 +3068,7 @@ int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr)
         goto ERR_EXIT;
     }
 
-    result = SX1278SetRfTxPower(sx1278_ptr, sx1278_ptr->cfg.tx_cfg.Power);
+    result = SX1278SetRfTxPower(sx1278_ptr, 14);//sx1278_ptr->cfg.tx_cfg.Power);
     if(result < 0)
     {
         goto ERR_EXIT;

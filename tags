@@ -56,8 +56,8 @@ LORA_IOC_WR_BITS_PER_WORD	drv_lib.h	57;"	d
 LORA_IOC_WR_LSB_FIRST	drv_lib.h	53;"	d
 LORA_IOC_WR_MAX_SPEED_HZ	drv_lib.h	61;"	d
 LORA_IOC_WR_MODE	drv_lib.h	49;"	d
-MODEM_FSK	sx1278.h	/^    MODEM_FSK = 0,$/;"	e	enum:__anon1
-MODEM_LORA	sx1278.h	/^    MODEM_LORA,$/;"	e	enum:__anon1
+MODEM_FSK	sx1278.h	/^    MODEM_FSK = 0,$/;"	e	enum:__anon2
+MODEM_LORA	sx1278.h	/^    MODEM_LORA,$/;"	e	enum:__anon2
 N_SPI_MINORS	drv_lora.c	63;"	d	file:
 PWD	Makefile	/^PWD := $(shell pwd)$/;"	m
 PayloadLength	drv_lib.h	/^    uint8_t PayloadLength;$/;"	m	struct:_Rx_Config_st_
@@ -491,7 +491,7 @@ RF_BITRATEMSB_57600_BPS	sx1278Regs-Fsk.h	176;"	d
 RF_BITRATEMSB_76800_BPS	sx1278Regs-Fsk.h	172;"	d
 RF_BITRATEMSB_9600_BPS	sx1278Regs-Fsk.h	164;"	d
 RF_BROADCASTADDRESS_ADDRESS	sx1278Regs-Fsk.h	860;"	d
-RF_CAD	drv_lora.h	/^    RF_CAD,        \/\/!< The radio is doing channel activity detection$/;"	e	enum:__anon3
+RF_CAD	drv_lora.h	/^    RF_CAD,        \/\/!< The radio is doing channel activity detection$/;"	e	enum:__anon1
 RF_DIOMAPPING1_DIO0_00	sx1278Regs-Fsk.h	1041;"	d
 RF_DIOMAPPING1_DIO0_01	sx1278Regs-Fsk.h	1042;"	d
 RF_DIOMAPPING1_DIO0_10	sx1278Regs-Fsk.h	1043;"	d
@@ -697,7 +697,7 @@ RF_FRFMSB_925_MHZ	sx1278Regs-Fsk.h	360;"	d
 RF_FRFMSB_926_MHZ	sx1278Regs-Fsk.h	363;"	d
 RF_FRFMSB_927_MHZ	sx1278Regs-Fsk.h	366;"	d
 RF_FRFMSB_928_MHZ	sx1278Regs-Fsk.h	369;"	d
-RF_IDLE	drv_lora.h	/^    RF_IDLE = 0,   \/\/!< The radio is idle$/;"	e	enum:__anon3
+RF_IDLE	drv_lora.h	/^    RF_IDLE = 0,   \/\/!< The radio is idle$/;"	e	enum:__anon1
 RF_IMAGECAL_AUTOIMAGECAL_MASK	sx1278Regs-Fsk.h	955;"	d
 RF_IMAGECAL_AUTOIMAGECAL_OFF	sx1278Regs-Fsk.h	957;"	d
 RF_IMAGECAL_AUTOIMAGECAL_ON	sx1278Regs-Fsk.h	956;"	d
@@ -1051,7 +1051,7 @@ RF_RXDELAY_INTERPACKETRXDELAY	sx1278Regs-Fsk.h	733;"	d
 RF_RXTIMEOUT1_TIMEOUTRXRSSI	sx1278Regs-Fsk.h	718;"	d
 RF_RXTIMEOUT2_TIMEOUTRXPREAMBLE	sx1278Regs-Fsk.h	723;"	d
 RF_RXTIMEOUT3_TIMEOUTSIGNALSYNC	sx1278Regs-Fsk.h	728;"	d
-RF_RX_RUNNING	drv_lora.h	/^    RF_RX_RUNNING, \/\/!< The radio is in reception state$/;"	e	enum:__anon3
+RF_RX_RUNNING	drv_lora.h	/^    RF_RX_RUNNING, \/\/!< The radio is in reception state$/;"	e	enum:__anon1
 RF_SEQCONFIG1_FROMIDLE_MASK	sx1278Regs-Fsk.h	893;"	d
 RF_SEQCONFIG1_FROMIDLE_TORX	sx1278Regs-Fsk.h	895;"	d
 RF_SEQCONFIG1_FROMIDLE_TOTX	sx1278Regs-Fsk.h	894;"	d
@@ -1133,15 +1133,15 @@ RF_TIMERRESOL_TIMER2RESOL_004100_US	sx1278Regs-Fsk.h	939;"	d
 RF_TIMERRESOL_TIMER2RESOL_262000_US	sx1278Regs-Fsk.h	940;"	d
 RF_TIMERRESOL_TIMER2RESOL_MASK	sx1278Regs-Fsk.h	936;"	d
 RF_TIMERRESOL_TIMER2RESOL_OFF	sx1278Regs-Fsk.h	937;"	d
-RF_TX_RUNNING	drv_lora.h	/^    RF_TX_RUNNING, \/\/!< The radio is in transmission state$/;"	e	enum:__anon3
+RF_TX_RUNNING	drv_lora.h	/^    RF_TX_RUNNING, \/\/!< The radio is in transmission state$/;"	e	enum:__anon1
 RSSI_OFFSET_HF	drv_lora.c	50;"	d	file:
 RSSI_OFFSET_HF	sx1278.h	15;"	d
 RSSI_OFFSET_LF	drv_lora.c	49;"	d	file:
 RSSI_OFFSET_LF	sx1278.h	14;"	d
-RadioModems_en	sx1278.h	/^}RadioModems_en;$/;"	t	typeref:enum:__anon1
-RadioRegisters_st	sx1278.h	/^}RadioRegisters_st;$/;"	t	typeref:struct:__anon2
+RadioModems_en	sx1278.h	/^}RadioModems_en;$/;"	t	typeref:enum:__anon2
+RadioRegisters_st	sx1278.h	/^}RadioRegisters_st;$/;"	t	typeref:struct:__anon3
 RadioRegsInit	sx1278.c	/^const RadioRegisters_st RadioRegsInit[] = RADIO_INIT_REGISTERS_VALUE;$/;"	v
-RadioState_en	drv_lora.h	/^}RadioState_en;$/;"	t	typeref:enum:__anon3
+RadioState_en	drv_lora.h	/^}RadioState_en;$/;"	t	typeref:enum:__anon1
 Reset	sx1278.h	/^    int        Reset;$/;"	m	struct:_SX1278_Gpio_st_
 RxPacketTimeout	drv_lib.h	/^    uint32_t RxPacketTimeout;$/;"	m	struct:_Rx_Config_st_
 RxPacketTimeout	sx1278.h	/^    uint32_t RxPacketTimeout;$/;"	m	struct:_SX1278_Rx_Config_st_
@@ -1291,11 +1291,8 @@ __SX1278_HAL_H__	sx1278_hal.h	2;"	d
 __SX1278_H__	sx1278.h	2;"	d
 __SX1278_REGS_FSK_H__	sx1278Regs-Fsk.h	24;"	d
 __SX1278_REGS_LORA_H__	sx1278Regs-LoRa.h	24;"	d
-__this_module	lora.mod.c	/^__visible struct module __this_module$/;"	v	typeref:struct:module
-__used	lora.mod.c	/^__used$/;"	v	file:
-__used	lora.mod.c	/^__used$/;"	v	typeref:struct:____versions	file:
 _lora_info_st	drv_lora.h	/^typedef struct _lora_info_st $/;"	s
-addr	sx1278.h	/^    uint16_t       addr;                             \/\/!< The address of the register$/;"	m	struct:__anon2
+addr	sx1278.h	/^    uint16_t       addr;                             \/\/!< The address of the register$/;"	m	struct:__anon3
 buf_lock	drv_lora.h	/^    struct mutex		buf_lock;$/;"	m	struct:_lora_info_st	typeref:struct:_lora_info_st::mutex
 buffer	drv_lora.h	/^    uint8_t			*buffer;$/;"	m	struct:_lora_info_st
 buffer_len	sx1278_hal.h	/^	size_t 				buffer_len;$/;"	m	struct:spidev_data
@@ -1307,7 +1304,7 @@ devt	drv_lora.h	/^    dev_t		    devt;$/;"	m	struct:_lora_info_st
 drv_cdev	drv_lora.c	/^static struct cdev drv_cdev;$/;"	v	typeref:struct:cdev	file:
 drv_class	drv_lora.c	/^static struct class *drv_class;$/;"	v	typeref:struct:class	file:
 drv_compat_ioctl	drv_lora.c	/^drv_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)$/;"	f	file:
-drv_compat_ioctl	drv_lora.c	1524;"	d	file:
+drv_compat_ioctl	drv_lora.c	1522;"	d	file:
 drv_dev_num	drv_lora.c	/^static dev_t drv_dev_num = MKDEV(DRV_MAJOR, 0);$/;"	v	file:
 drv_dt_ids	drv_lora.c	/^static const struct of_device_id drv_dt_ids[] = {$/;"	v	typeref:struct:of_device_id	file:
 drv_exit	drv_lora.c	/^module_exit(drv_exit);$/;"	v
@@ -1347,7 +1344,7 @@ lora_work_func	drv_lora.c	/^static void lora_work_func(struct work_struct *dw)$/
 lora_wq	drv_lora.h	/^    wait_queue_head_t lora_wq;$/;"	m	struct:_lora_info_st
 main	test_open.c	/^int main(void)$/;"	f
 main	test_send.c	/^int main(void)$/;"	f
-modem	sx1278.h	/^    RadioModems_en modem;$/;"	m	struct:__anon2
+modem	sx1278.h	/^    RadioModems_en modem;$/;"	m	struct:__anon3
 obj-m	Makefile	/^obj-m := lora.o$/;"	m
 regdata	drv_lora.c	/^uint8_t regdata[50] = {0};$/;"	v
 rssi	drv_lib.h	/^    int16_t rssi;$/;"	m	struct:_Rx_Signal_Param_st_
@@ -1372,4 +1369,4 @@ sx1278	drv_lora.h	/^    SX1278_st sx1278;$/;"	m	struct:_lora_info_st
 sx1278_spi_driver	drv_lora.c	/^static struct spi_driver sx1278_spi_driver = {$/;"	v	typeref:struct:spi_driver	file:
 tx_cfg	sx1278.h	/^    SX1278_Tx_Config_st tx_cfg;$/;"	m	struct:_SX1278_Cfg_st_
 users	drv_lora.h	/^    unsigned			users;$/;"	m	struct:_lora_info_st
-value	sx1278.h	/^    uint8_t        value;                            \/\/!< The value of the register$/;"	m	struct:__anon2
+value	sx1278.h	/^    uint8_t        value;                            \/\/!< The value of the register$/;"	m	struct:__anon3

@@ -1078,7 +1078,7 @@ static int drv_open(struct inode *inode, struct file *filp)
     lora_ptr->sx1278.cfg.rx_cfg.PayloadLength        = 128;
 
     lora_ptr->sx1278.cfg.tx_cfg.RFFrequency          = 470300000;
-    lora_ptr->sx1278.cfg.tx_cfg.Power                = 0;
+    lora_ptr->sx1278.cfg.tx_cfg.Power                = 14;
     lora_ptr->sx1278.cfg.tx_cfg.SignalBw             = 0;
     lora_ptr->sx1278.cfg.tx_cfg.SpreadingFactor      = 7;
     lora_ptr->sx1278.cfg.tx_cfg.ErrorCoding          = 2;
@@ -1246,7 +1246,6 @@ static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count
         {
             goto ERR_EXIT;
         }        
-        
         result = SX1278_Read_Buffer(lora_ptr->sx1278.spi_ptr, 0x1, regdata, 50);
         if(result < 0)
         {
@@ -1269,9 +1268,7 @@ static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count
             lora_ptr->lora_send_state = 0;
             result = -ETIMEDOUT;
         }
-        
     }
-
     mutex_unlock(&lora_ptr->lora_mutex);
     result = SX1278SetRxConfig(&lora_ptr->sx1278);
     if(result < 0)
@@ -1285,7 +1282,6 @@ static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count
         goto ERR_EXIT;
     }
     lora_ptr->state =RF_RX_RUNNING;
-    
 ERR_EXIT:
 
     if(lora_ptr->buffer)
