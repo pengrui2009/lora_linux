@@ -129,30 +129,6 @@ ERR_EXIT:
     return result;
 }
 
-int SX1278_Read_Buffer(struct spi_device *spi_ptr, uint8_t addr, uint8_t *data_ptr, uint8_t data_len)
-{
-    int result = 0;
-    uint8_t reg = (addr & 0x7F);
-
-    if((NULL == spi_ptr) || (NULL == data_ptr))
-    {
-        printk(KERN_ERR "%s %d error %d reading %x\n", __FUNCTION__, __LINE__, result, addr);
-        result = -ENOMEM;
-        goto ERR_EXIT;
-    }
-    
-    result = spi_write_then_read(spi_ptr, &reg, 1, data_ptr, data_len);
-    if (result < 0)
-    {
-        printk(KERN_ERR "%s %d error %d reading %x\n", __FUNCTION__, __LINE__, result, addr);
-        goto ERR_EXIT;
-    }
-
-ERR_EXIT:
-    
-    return result;
-}
-
 int SX1278_Write_Reg(struct spi_device *spi_ptr, uint8_t addr, uint8_t data)
 {
     int result = 0;
@@ -463,6 +439,11 @@ int SX1278LoRaSetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t opMode)
             //RXTX( antennaSwitchTxOn ); // Antenna switch control
         }
         
+        result = SX1278_Read_Reg(sx1278_ptr->spi_ptr, REG_LR_OPMODE, &RegOpMode);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        } 
         RegOpMode = ( RegOpMode & RFLR_OPMODE_MASK ) | opMode;
         
         result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_OPMODE, RegOpMode);   
@@ -599,41 +580,43 @@ int8_t SX1278LoRaGetPacketRssi( void )
 int SX1278LoRaSetRFFrequency(SX1278_st_ptr sx1278_ptr, uint32_t freq)
 {
     int result = 0;
-    uint8_t regval = 0;
+    uint8_t regmsb = 0;
+    uint8_t regmid = 0;
+    uint8_t reglsb = 0;
     uint64_t temp = 0;
-    uint64_t freq_step = FREQ_STEP; 
-    uint32_t fstep = 0;
+    uint64_t freq_step = FREQ_STEP;    
+    uint32_t step = 0;    
 
     if(NULL == sx1278_ptr)
     {
         result = -ENOMEM;
         goto ERR_EXIT;
     }
-    
-    do_div(freq_step, 5);
-    fstep = (uint32_t)freq_step;
+
+    do_div(freq_step, 5);   
+    step = (uint32_t)freq_step;
  
-    temp = (uint64_t)freq * 10000000;
-    do_div(temp, fstep);
+    temp = (uint64_t)freq * 100000000;
+    do_div(temp, step);
     
     freq = ( uint32_t )temp / 5;
-
-    regval = ( uint8_t )( ( freq >> 16 ) & 0xFF );
-    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_FRFMSB, regval);
+    
+    regmsb = ( uint8_t )( ( freq >> 16 ) & 0xFF );
+    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_FRFMSB, regmsb);
     if(result < 0)
     {
         goto ERR_EXIT;
     }
 
-    regval = ( uint8_t )( ( freq >> 8 ) & 0xFF );
-    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_FRFMID, regval);
+    regmid = ( uint8_t )( ( freq >> 8 ) & 0xFF );
+    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_FRFMID, regmid);
     if(result < 0)
     {
         goto ERR_EXIT;
     }
 
-    regval = ( uint8_t )( freq & 0xFF );
-    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_FRFLSB, regval);
+    reglsb = ( uint8_t )( freq & 0xFF );
+    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_FRFLSB, reglsb);
     if(result < 0)
     {
         goto ERR_EXIT;
@@ -675,7 +658,6 @@ int SX1278LoRaGetRFFrequency(SX1278_st_ptr sx1278_ptr, uint32_t *RFFrequency)
     {
         goto ERR_EXIT;
     }
-    printk(KERN_ERR "Msb:0x%0x Mid:0x%0x Lsb:0x%0x\n", RegFrfMsb, RegFrfMid, RegFrfLsb);
     temp = ((uint32_t)RegFrfMsb<<16)|((uint32_t)RegFrfMid<<8)|((uint32_t)RegFrfLsb); 
     temp *= FREQ_STEP;
 
@@ -684,6 +666,103 @@ int SX1278LoRaGetRFFrequency(SX1278_st_ptr sx1278_ptr, uint32_t *RFFrequency)
 
 ERR_EXIT:
     
+    return result;
+}
+
+uint8_t SX1276GetPaSelect( uint32_t channel )
+{
+    if( channel < RF_MID_BAND_THRESH )
+    {
+        return RF_PACONFIG_PASELECT_PABOOST;
+    }
+    else
+    {
+        return RF_PACONFIG_PASELECT_RFO;
+    }
+}
+
+int SX1276SetRfTxPower(SX1278_st_ptr sx1278_ptr, int power)
+{
+    int result = 0;
+    uint8_t paConfig = 0;
+    uint8_t paDac = 0;
+
+    result = SX1278_Read_Reg(sx1278_ptr->spi_ptr ,REG_PACONFIG, &paConfig);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+    
+    result = SX1278_Read_Reg(sx1278_ptr->spi_ptr ,REG_PADAC, &paDac);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+
+    paConfig = ( paConfig & RF_PACONFIG_PASELECT_MASK ) | SX1276GetPaSelect(sx1278_ptr->cfg.tx_cfg.RFFrequency);
+    paConfig = ( paConfig & RF_PACONFIG_MAX_POWER_MASK ) | 0x70;
+
+    if( ( paConfig & RF_PACONFIG_PASELECT_PABOOST ) == RF_PACONFIG_PASELECT_PABOOST )
+    {
+        if( power > 17 )
+        {
+            paDac = ( paDac & RF_PADAC_20DBM_MASK ) | RF_PADAC_20DBM_ON;
+        }
+        else
+        {
+            paDac = ( paDac & RF_PADAC_20DBM_MASK ) | RF_PADAC_20DBM_OFF;
+        }
+        if( ( paDac & RF_PADAC_20DBM_ON ) == RF_PADAC_20DBM_ON )
+        {
+            if( power < 5 )
+            {
+                power = 5;
+            }
+            if( power > 20 )
+            {
+                power = 20;
+            }
+            paConfig = ( paConfig & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power - 5 ) & 0x0F );
+        }
+        else
+        {
+            if( power < 2 )
+            {
+                power = 2;
+            }
+            if( power > 17 )
+            {
+                power = 17;
+            }
+            paConfig = ( paConfig & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power - 2 ) & 0x0F );
+        }
+    }
+    else
+    {
+        if( power < -1 )
+        {
+            power = -1;
+        }
+        if( power > 14 )
+        {
+            power = 14;
+        }
+        paConfig = ( paConfig & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power + 1 ) & 0x0F );
+    }
+    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_PACONFIG, paConfig);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+    
+    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_PADAC, paDac);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+
+ERR_EXIT:
+
     return result;
 }
 
@@ -885,7 +964,7 @@ int SX1278LoRaSetSpreadingFactor(SX1278_st_ptr sx1278_ptr, uint8_t factor)
 
     if(factor == 6)
     {
-        //result = SX1278LoRaSetNbTrigPeaks(sx1278_ptr, 5);
+        result = SX1278LoRaSetNbTrigPeaks(sx1278_ptr, 5);
         if(result < 0)
         {
             goto ERR_EXIT;
@@ -893,7 +972,7 @@ int SX1278LoRaSetSpreadingFactor(SX1278_st_ptr sx1278_ptr, uint8_t factor)
     }
     else
     {
-        //result = SX1278LoRaSetNbTrigPeaks(sx1278_ptr, 3);
+        result = SX1278LoRaSetNbTrigPeaks(sx1278_ptr, 3);
         if(result < 0)
         {
             goto ERR_EXIT;
@@ -907,6 +986,7 @@ int SX1278LoRaSetSpreadingFactor(SX1278_st_ptr sx1278_ptr, uint8_t factor)
     }
     
     RegModemConfig2 = (RegModemConfig2&RFLR_MODEMCONFIG2_SF_MASK)|(factor<<4);
+    printk(KERN_ERR "RegModemConfig2:0x%0x\n", RegModemConfig2);
     result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_MODEMCONFIG2, RegModemConfig2);
     if(result < 0)
     {
@@ -1013,6 +1093,7 @@ int SX1278LoRaSetPacketCrcOn(SX1278_st_ptr sx1278_ptr, bool enable)
     }
 
     RegModemConfig2 = (RegModemConfig2&RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK )|(enable<<2);
+    printk(KERN_ERR "RegModemConfig2:0x%0x\n", RegModemConfig2);
     result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_MODEMCONFIG2, RegModemConfig2);
     if(result < 0)
     {
@@ -1036,7 +1117,7 @@ int SX1278LoRaSetPreambleLength(SX1278_st_ptr sx1278_ptr, uint16_t value)
         goto ERR_EXIT;
     }
     
-    RegPreambleMsb =(value>>8) & 0x00FF;
+    RegPreambleMsb = ( value >> 8 ) & 0x00FF;
     RegPreambleLsb = value & 0xFF;
     
     result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_PREAMBLEMSB, RegPreambleMsb);
@@ -1670,7 +1751,7 @@ int SX1278LoRaSetSymbTimeout(SX1278_st_ptr sx1278_ptr, uint16_t value)
         goto ERR_EXIT;
     }
     
-    result = SX1278_Read_Reg(sx1278_ptr->spi_ptr, REG_LR_SYMBTIMEOUTLSB, &RegModemConfig2);
+    result = SX1278_Read_Reg(sx1278_ptr->spi_ptr, REG_LR_SYMBTIMEOUTLSB, &RegSymbTimeoutLsb);
     if(result < 0)
     {
         goto ERR_EXIT;
@@ -1679,6 +1760,7 @@ int SX1278LoRaSetSymbTimeout(SX1278_st_ptr sx1278_ptr, uint16_t value)
     RegModemConfig2 = (RegModemConfig2&RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK)|((value>>8)&~RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK);
     RegSymbTimeoutLsb = value&0xFF;
 
+    printk(KERN_ERR "timeout RegModemConfig2:0x%0x\n", RegModemConfig2);
     result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_MODEMCONFIG2, RegModemConfig2);
     if(result < 0)
     {
@@ -2311,7 +2393,7 @@ int SX1278Init(SX1278_st_ptr sx1278_ptr)
 
     for( i = 0; i < sizeof( RadioRegsInit ) / sizeof( RadioRegisters_st ); i++ )
     {
-        result = SX1276SetModem(sx1278_ptr, RadioRegsInit[i].modem);
+        result = SX1278SetModem(sx1278_ptr, RadioRegsInit[i].modem);
         if(result < 0)
         {
             goto ERR_EXIT;
@@ -2325,7 +2407,7 @@ int SX1278Init(SX1278_st_ptr sx1278_ptr)
     }
     
     // Initialize LoRa registers structure
-    result = SX1276SetModem(sx1278_ptr, MODEM_LORA);
+    result = SX1278SetModem(sx1278_ptr, MODEM_LORA);
     if(result < 0)
     {
         goto ERR_EXIT;
@@ -2482,7 +2564,7 @@ ERR_EXIT:
     return result;
 }
 
-int SX1276SetModem(SX1278_st_ptr sx1278_ptr, RadioModems_en modem)
+int SX1278SetModem(SX1278_st_ptr sx1278_ptr, RadioModems_en modem)
 {
     int result = 0;
     uint8_t regval = 0;
@@ -2944,106 +3026,6 @@ ERR_EXIT:
     return result;
 }
 
-uint8_t SX1276GetPaSelect(uint32_t channel)
-{
-#if 0
-    if( channel > RF_MID_BAND_THRESH )
-    {
-        return RF_PACONFIG_PASELECT_PABOOST;
-    }
-    else
-    {
-        return RF_PACONFIG_PASELECT_RFO;
-    }
-#endif
-    return 0x80;
-}
-
-int SX1278SetRfTxPower(SX1278_st_ptr sx1278_ptr, int power)
-{
-    int result = 0;
-    uint8_t paConfig = 0;
-    uint8_t paDac = 0;
-
-    result = SX1278_Read_Reg(sx1278_ptr->spi_ptr ,REG_PACONFIG, &paConfig);
-    if(result < 0)
-    {
-        goto ERR_EXIT;
-    }
-    
-    result = SX1278_Read_Reg(sx1278_ptr->spi_ptr ,REG_PADAC, &paDac);
-    if(result < 0)
-    {
-        goto ERR_EXIT;
-    }
-
-    paConfig = ( paConfig & RF_PACONFIG_PASELECT_MASK ) | SX1276GetPaSelect(sx1278_ptr->cfg.tx_cfg.RFFrequency);
-    paConfig = ( paConfig & RF_PACONFIG_MAX_POWER_MASK ) | 0x70;
-
-    if( ( paConfig & RF_PACONFIG_PASELECT_PABOOST ) == RF_PACONFIG_PASELECT_PABOOST )
-    {
-        if( power > 17 )
-        {
-            paDac = ( paDac & RF_PADAC_20DBM_MASK ) | RF_PADAC_20DBM_ON;
-        }
-        else
-        {
-            paDac = ( paDac & RF_PADAC_20DBM_MASK ) | RF_PADAC_20DBM_OFF;
-        }
-        if( ( paDac & RF_PADAC_20DBM_ON ) == RF_PADAC_20DBM_ON )
-        {
-            if( power < 5 )
-            {
-                power = 5;
-            }
-            if( power > 20 )
-            {
-                power = 20;
-            }
-            paConfig = ( paConfig & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power - 5 ) & 0x0F );
-        }
-        else
-        {
-            if( power < 2 )
-            {
-                power = 2;
-            }
-            if( power > 17 )
-            {
-                power = 17;
-            }
-            paConfig = ( paConfig & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power - 2 ) & 0x0F );
-        }
-    }
-    else
-    {
-        if( power < -1 )
-        {
-            power = -1;
-        }
-        if( power > 14 )
-        {
-            power = 14;
-        }
-        paConfig = ( paConfig & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power + 1 ) & 0x0F );
-    }
-    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_PACONFIG, paConfig);
-    if(result < 0)
-    {
-        goto ERR_EXIT;
-    }
-    
-    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_PADAC, paDac);
-    if(result < 0)
-    {
-        goto ERR_EXIT;
-    }
-
-ERR_EXIT:
-
-    return result;
-}
-
 int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr)
 {
     int result = 0;
@@ -3055,20 +3037,19 @@ int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr)
         goto ERR_EXIT;
     }
 
-    result = SX1276SetModem(sx1278_ptr, MODEM_LORA);
+    result = SX1278SetModem(sx1278_ptr, MODEM_LORA);
     if(result < 0)
     {
         goto ERR_EXIT;
     }
 
+    result = SX1276SetRfTxPower(sx1278_ptr, sx1278_ptr->cfg.tx_cfg.Power);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
     // set the Rx RF settings 
     result = SX1278LoRaSetRFFrequency(sx1278_ptr, sx1278_ptr->cfg.tx_cfg.RFFrequency);
-    if(result < 0)
-    {
-        goto ERR_EXIT;
-    }
-
-    result = SX1278SetRfTxPower(sx1278_ptr, 14);//sx1278_ptr->cfg.tx_cfg.Power);
     if(result < 0)
     {
         goto ERR_EXIT;
@@ -3136,6 +3117,12 @@ int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr)
         {
             goto ERR_EXIT;
         }
+    }
+
+    result = SX1278LoRaSetSymbTimeout(sx1278_ptr, sx1278_ptr->cfg.tx_cfg.TxPacketTimeout);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
     }
 
     result = SX1278LoRaSetPreambleLength(sx1278_ptr, sx1278_ptr->cfg.tx_cfg.PreambleLen);
