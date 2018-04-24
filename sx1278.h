@@ -200,4 +200,8 @@ int SX1276SetModem(SX1278_st_ptr sx1278_ptr, RadioModems_en modem);
 int SX1278SetRxConfig(SX1278_st_ptr sx1278_ptr);
 
 int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr);
+
+int SX1278LoRaGetRFFrequency(SX1278_st_ptr sx1278_ptr, uint32_t *RFFrequency);
+
+int SX1278_Read_Buffer(struct spi_device *spi_ptr, uint8_t addr, uint8_t *data_ptr, uint8_t data_len);
 #endif/*__SX1278_H__*/

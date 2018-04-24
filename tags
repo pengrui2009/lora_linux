@@ -1153,6 +1153,7 @@ Rx_Signal_Param_st	drv_lib.h	/^}Rx_Signal_Param_st, *Rx_Signal_Param_st_ptr;$/;"
 Rx_Signal_Param_st_ptr	drv_lib.h	/^}Rx_Signal_Param_st, *Rx_Signal_Param_st_ptr;$/;"	t	typeref:struct:_Rx_Signal_Param_st_
 SPI_MODE_MASK	drv_lora.c	80;"	d	file:
 STAGING_DIR	Makefile	/^STAGING_DIR := \/home\/linux\/openwrt\/openwrt-offical\/staging_dir$/;"	m
+SX1276GetPaSelect	sx1278.c	/^uint8_t SX1276GetPaSelect(uint32_t channel)$/;"	f
 SX1276SetModem	sx1278.c	/^int SX1276SetModem(SX1278_st_ptr sx1278_ptr, RadioModems_en modem)$/;"	f
 SX1278CadFinished	sx1278.c	/^int SX1278CadFinished(SX1278_st_ptr sx1278_ptr)$/;"	f
 SX1278FhssChangedChannel	sx1278.c	/^int SX1278FhssChangedChannel(SX1278_st_ptr sx1278_ptr, uint8_t *RxGain)$/;"	f
@@ -1233,6 +1234,7 @@ SX1278RxFinished	sx1278.c	/^int SX1278RxFinished(SX1278_st_ptr sx1278_ptr)$/;"	f
 SX1278SetLoRaOn	sx1278.c	/^int SX1278SetLoRaOn(SX1278_st_ptr sx1278_ptr, bool enable)$/;"	f
 SX1278SetOpMode	sx1278.c	/^int SX1278SetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t opMode )$/;"	f
 SX1278SetRFState	sx1278.c	/^int SX1278SetRFState(SX1278_st_ptr sx1278_ptr, uint8_t state)$/;"	f
+SX1278SetRfTxPower	sx1278.c	/^int SX1278SetRfTxPower(SX1278_st_ptr sx1278_ptr, int power)$/;"	f
 SX1278SetRxConfig	sx1278.c	/^int SX1278SetRxConfig(SX1278_st_ptr sx1278_ptr)$/;"	f
 SX1278SetTxConfig	sx1278.c	/^int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr)$/;"	f
 SX1278SetTxPacket	sx1278.c	/^int SX1278SetTxPacket(SX1278_st_ptr sx1278_ptr, uint8_t *buffer_ptr, uint8_t buffer_len )$/;"	f
@@ -1250,6 +1252,7 @@ SX1278_OnDio2Irq	drv_lora.c	/^irqreturn_t SX1278_OnDio2Irq(int irq, void *dev_id
 SX1278_OnDio3Irq	drv_lora.c	/^irqreturn_t SX1278_OnDio3Irq(int irq, void *dev_id)$/;"	f
 SX1278_OnDio4Irq	drv_lora.c	/^irqreturn_t SX1278_OnDio4Irq(int irq, void *dev_id)$/;"	f
 SX1278_RX_CONFIG_ST_LEN	sx1278.h	78;"	d
+SX1278_Read_Buffer	sx1278.c	/^int SX1278_Read_Buffer(struct spi_device *spi_ptr, uint8_t addr, uint8_t *data_ptr, uint8_t data_len)$/;"	f
 SX1278_Read_FIFO	sx1278.c	/^int SX1278_Read_FIFO(struct spi_device *spi_ptr, uint8_t *data_ptr, uint8_t data_len)$/;"	f
 SX1278_Read_Reg	sx1278.c	/^int SX1278_Read_Reg(struct spi_device *spi_ptr, uint8_t addr, uint8_t *data_ptr)$/;"	f
 SX1278_Rx_Config_st	sx1278.h	/^}SX1278_Rx_Config_st, *SX1278_Rx_Config_st_ptr;$/;"	t	typeref:struct:_SX1278_Rx_Config_st_
@@ -1288,6 +1291,9 @@ __SX1278_HAL_H__	sx1278_hal.h	2;"	d
 __SX1278_H__	sx1278.h	2;"	d
 __SX1278_REGS_FSK_H__	sx1278Regs-Fsk.h	24;"	d
 __SX1278_REGS_LORA_H__	sx1278Regs-LoRa.h	24;"	d
+__this_module	lora.mod.c	/^__visible struct module __this_module$/;"	v	typeref:struct:module
+__used	lora.mod.c	/^__used$/;"	v	file:
+__used	lora.mod.c	/^__used$/;"	v	typeref:struct:____versions	file:
 _lora_info_st	drv_lora.h	/^typedef struct _lora_info_st $/;"	s
 addr	sx1278.h	/^    uint16_t       addr;                             \/\/!< The address of the register$/;"	m	struct:__anon2
 buf_lock	drv_lora.h	/^    struct mutex		buf_lock;$/;"	m	struct:_lora_info_st	typeref:struct:_lora_info_st::mutex
@@ -1301,7 +1307,7 @@ devt	drv_lora.h	/^    dev_t		    devt;$/;"	m	struct:_lora_info_st
 drv_cdev	drv_lora.c	/^static struct cdev drv_cdev;$/;"	v	typeref:struct:cdev	file:
 drv_class	drv_lora.c	/^static struct class *drv_class;$/;"	v	typeref:struct:class	file:
 drv_compat_ioctl	drv_lora.c	/^drv_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)$/;"	f	file:
-drv_compat_ioctl	drv_lora.c	1504;"	d	file:
+drv_compat_ioctl	drv_lora.c	1524;"	d	file:
 drv_dev_num	drv_lora.c	/^static dev_t drv_dev_num = MKDEV(DRV_MAJOR, 0);$/;"	v	file:
 drv_dt_ids	drv_lora.c	/^static const struct of_device_id drv_dt_ids[] = {$/;"	v	typeref:struct:of_device_id	file:
 drv_exit	drv_lora.c	/^module_exit(drv_exit);$/;"	v
@@ -1343,6 +1349,7 @@ main	test_open.c	/^int main(void)$/;"	f
 main	test_send.c	/^int main(void)$/;"	f
 modem	sx1278.h	/^    RadioModems_en modem;$/;"	m	struct:__anon2
 obj-m	Makefile	/^obj-m := lora.o$/;"	m
+regdata	drv_lora.c	/^uint8_t regdata[50] = {0};$/;"	v
 rssi	drv_lib.h	/^    int16_t rssi;$/;"	m	struct:_Rx_Signal_Param_st_
 rx_cfg	sx1278.h	/^    SX1278_Rx_Config_st rx_cfg;$/;"	m	struct:_SX1278_Cfg_st_
 rx_rssi	drv_lora.h	/^    int16_t rx_rssi;$/;"	m	struct:_lora_info_st
