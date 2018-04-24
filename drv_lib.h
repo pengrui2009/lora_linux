@@ -16,6 +16,7 @@ typedef struct _Tx_Config_st_
     bool CrcOn;                         // [0: OFF, 1: ON]
     bool ImplicitHeaderOn;              // [0: OFF, 1: ON]
     bool FreqHopOn;                     // [0: OFF, 1: ON]
+    bool IqInverted;                    // [0: OFF, 1: ON]
     uint8_t HopPeriod;                  // Hops every frequency hopping period symbols
     uint32_t TxPacketTimeout;
     uint8_t PayloadLength;
@@ -32,6 +33,7 @@ typedef struct _Rx_Config_st_
     bool ImplicitHeaderOn;              // [0: OFF, 1: ON]
     bool RxSingleOn;                    // [0: Continuous, 1 Single]
     bool FreqHopOn;                     // [0: OFF, 1: ON]
+    bool IqInverted;                    // [0: OFF, 1: ON]
     uint8_t HopPeriod;                  // Hops every frequency hopping period symbols
     uint32_t RxPacketTimeout;
     uint8_t PayloadLength;
