@@ -147,7 +147,7 @@ int SX1278SetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t opMode);
 
 int SX1278GetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t *opmode);
 
-int SX1278ReadRssi(SX1278_st_ptr sx1278_ptr, int8_t *rssi);
+int SX1278ReadRssi(SX1278_st_ptr sx1278_ptr, uint32_t freq, int8_t *rssi);
 
 int SX1278ReadRxGain(SX1278_st_ptr sx1278_ptr, uint8_t *rxgain);
 
@@ -199,6 +199,8 @@ int SX1278LoRaSetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t opMode);
 
 int SX1278LoRaGetOpMode(SX1278_st_ptr sx1278_ptr, uint8_t *opmode);
 
+int SX1278LoRaGetModem(SX1278_st_ptr sx1278_ptr, RadioModems_en *modem);
+
 int SX1278LoRaSetNbTrigPeaks(SX1278_st_ptr sx1278_ptr, uint8_t value);
 
 int SX1278Init(SX1278_st_ptr sx1278_ptr);
@@ -224,4 +226,6 @@ int SX1278SetModem(SX1278_st_ptr sx1278_ptr, RadioModems_en modem);
 int SX1278SetRxConfig(SX1278_st_ptr sx1278_ptr);
 
 int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr);
+
+int SX1278LoRaSetLNA(SX1278_st_ptr sx1278_ptr, uint8_t val);
 #endif/*__SX1278_H__*/

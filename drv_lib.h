@@ -1,3 +1,14 @@
+/*****************************************************************************
+ Copyright(C) Beijing Carsmart Technology Co., Ltd.
+ All rights reserved.
+ 
+ @file   : drv_lib.h
+ @brief  : the interface of lora sx1278 module.
+ @author : pengrui
+ @history:
+           2018-04-13    pengrui    Created file
+           ...
+******************************************************************************/
 #ifndef __DRV_LIB_H__
 #define __DRV_LIB_H__
 
