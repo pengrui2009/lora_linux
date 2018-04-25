@@ -38,6 +38,7 @@
 #define RSSI_OFFSET_LF                              -164
 #define RSSI_OFFSET_HF                              -157
 
+#define FIFO_BUFFER_SIZE                            256
 /*!
  * Radio driver supported modems
  */

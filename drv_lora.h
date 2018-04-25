@@ -29,20 +29,34 @@ typedef enum
     RF_RX_RUNNING, //!< The radio is in reception state
     RF_TX_RUNNING, //!< The radio is in transmission state
     RF_CAD,        //!< The radio is doing channel activity detection
+    RF_RX_TIMEOUT,
+    RF_TX_TIMEOUT,
 }RadioState_en;
+
+typedef struct _lora_data_st_
+{
+    //the data buffer of tx or rx
+    uint8_t *data_ptr;
+    //totoal data_len we rx or tx
+    uint8_t data_len;
+    //finish tx or rx length
+    uint8_t doing_len;
+    //current tx or rx length
+    uint8_t done_len;
+}lora_data_st, *lora_data_st_ptr;;
 
 typedef struct _lora_info_st 
 {
     char        	*drv_name;
     dev_t		    devt;
-    spinlock_t		spi_lock;
+    spinlock_t		spinlock;
 //    struct spi_device	*spi_ptr;
     struct list_head	device_entry;
 
     /* buffer is NULL unless this device is open (users > 0) */
     struct mutex		buf_lock;
 
-    struct mutex		lora_mutex;
+    struct mutex		mutex;
     unsigned			users;
     uint8_t			*buffer;
     /*0: success 1:send timeout 2:rx timeout*/
@@ -52,14 +66,15 @@ typedef struct _lora_info_st
     uint8_t           lora_send_state;
 
     wait_queue_head_t lora_rq;
-    wait_queue_head_t lora_wq;
+    wait_queue_head_t wq;
 
     struct completion lora_completion;
     /*the tx timeout handler work*/
-    struct delayed_work lora_delaywork;
+    struct delayed_work delaywork;
     /*the work of irq bottom handler*/
-    struct work_struct lora_work;
-
+    struct work_struct work;
+    /*the buffer of send*/
+    lora_data_st txdata;
     /**/
     int8_t rx_snr;
     /**/
