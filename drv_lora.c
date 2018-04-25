@@ -1477,22 +1477,140 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     /* read requests */
     case LORA_IOC_RD_RXCONFIG:
     {
-        result = copy_to_user((void *)arg, &lora_ptr->sx1278.cfg.rx_cfg, SX1278_RX_CONFIG_ST_LEN);
+        Rx_Config_st cfg = {0};
+        cfg.RFFrequency       = lora_ptr->sx1278.cfg.rx_cfg.RFFrequency;
+        cfg.SignalBw          = lora_ptr->sx1278.cfg.rx_cfg.SignalBw;
+        cfg.SpreadingFactor   = lora_ptr->sx1278.cfg.rx_cfg.SpreadingFactor;
+        cfg.ErrorCoding       = lora_ptr->sx1278.cfg.rx_cfg.ErrorCoding;
+        cfg.CrcOn             = lora_ptr->sx1278.cfg.rx_cfg.CrcOn;
+        cfg.IqInverted        = lora_ptr->sx1278.cfg.rx_cfg.IqInverted;
+        cfg.HopPeriod         = lora_ptr->sx1278.cfg.rx_cfg.HopPeriod;
+        cfg.PayloadLength     = lora_ptr->sx1278.cfg.rx_cfg.PayloadLength;
+
+        result = copy_to_user((void *)arg, &cfg, SX1278_RX_CONFIG_ST_LEN);
         break;
     }
     case LORA_IOC_WD_RXCONFIG:
     {
-        result = copy_from_user(&lora_ptr->sx1278.cfg.rx_cfg, (void *)arg, SX1278_RX_CONFIG_ST_LEN);
+        Rx_Config_st cfg = {0};
+        result = copy_from_user(&cfg, (void *)arg, SX1278_RX_CONFIG_ST_LEN);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
+        
+        if((cfg.RFFrequency < 137000000) || (cfg.RFFrequency > 960000000))
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+
+        if((cfg.RFFrequency <= 169000000) &&((8 == cfg.SignalBw) || (9 == cfg.SignalBw)))
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+
+        if(cfg.SignalBw > 9)
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+        
+        if((cfg.SpreadingFactor < 6) || (cfg.SpreadingFactor > 12))
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+
+        if((0 == cfg.ErrorCoding) || (4 < cfg.ErrorCoding))
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+
+        lora_ptr->sx1278.cfg.rx_cfg.RFFrequency     = cfg.RFFrequency;
+        lora_ptr->sx1278.cfg.rx_cfg.SignalBw        = cfg.SignalBw;
+        lora_ptr->sx1278.cfg.rx_cfg.SpreadingFactor = cfg.SpreadingFactor;
+        lora_ptr->sx1278.cfg.rx_cfg.ErrorCoding     = cfg.ErrorCoding;
+        lora_ptr->sx1278.cfg.rx_cfg.CrcOn           = cfg.CrcOn;
+        lora_ptr->sx1278.cfg.rx_cfg.IqInverted      = cfg.IqInverted;
+        lora_ptr->sx1278.cfg.rx_cfg.HopPeriod       = cfg.HopPeriod;
+        lora_ptr->sx1278.cfg.rx_cfg.PayloadLength   = cfg.PayloadLength;
+
         break;
     }
     case LORA_IOC_RD_TXCONFIG:
     {
-        result = copy_to_user((void *)arg, &lora_ptr->sx1278.cfg.rx_cfg, SX1278_TX_CONFIG_ST_LEN);
+        Tx_Config_st cfg = {0};
+        cfg.RFFrequency        = lora_ptr->sx1278.cfg.tx_cfg.RFFrequency;
+        cfg.Power              = lora_ptr->sx1278.cfg.tx_cfg.Power;
+        cfg.SignalBw           = lora_ptr->sx1278.cfg.tx_cfg.SignalBw;
+        cfg.SpreadingFactor    = lora_ptr->sx1278.cfg.tx_cfg.SpreadingFactor;
+        cfg.ErrorCoding        = lora_ptr->sx1278.cfg.tx_cfg.ErrorCoding;
+        cfg.CrcOn              = lora_ptr->sx1278.cfg.tx_cfg.CrcOn;
+        cfg.ImplicitHeaderOn   = lora_ptr->sx1278.cfg.tx_cfg.ImplicitHeaderOn;
+        cfg.FreqHopOn          = lora_ptr->sx1278.cfg.tx_cfg.FreqHopOn;
+        cfg.TxPacketTimeout    = lora_ptr->sx1278.cfg.tx_cfg.TxPacketTimeout;
+        cfg.PayloadLength      = lora_ptr->sx1278.cfg.tx_cfg.PayloadLength;
+        result = copy_to_user((void *)arg, &cfg, SX1278_TX_CONFIG_ST_LEN);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
         break; 
     }
     case LORA_IOC_WD_TXCONFIG:
     {
-        result = copy_from_user(&lora_ptr->sx1278.cfg.rx_cfg, (void *)arg, SX1278_TX_CONFIG_ST_LEN);
+        Tx_Config_st cfg = {0};
+        result = copy_from_user(&cfg, (void *)arg, SX1278_TX_CONFIG_ST_LEN);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
+        
+        if((cfg.RFFrequency < 137000000) || (cfg.RFFrequency > 960000000))
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+         
+        if((cfg.RFFrequency <= 169000000) && ((8 == cfg.SignalBw) || (9 == cfg.SignalBw)))
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+        
+        if(cfg.SignalBw > 9)
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+         
+        if((cfg.SpreadingFactor < 6) || (cfg.SpreadingFactor > 12))
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+
+        if((0 == cfg.ErrorCoding) || (4 < cfg.ErrorCoding))
+        {
+            result = -EINVAL;
+            goto ERR_EXIT;
+        }
+        
+         
+
+        lora_ptr->sx1278.cfg.tx_cfg.RFFrequency      = cfg.RFFrequency;
+        lora_ptr->sx1278.cfg.tx_cfg.Power            = cfg.Power;
+        lora_ptr->sx1278.cfg.tx_cfg.SignalBw         = cfg.SignalBw;
+        lora_ptr->sx1278.cfg.tx_cfg.SpreadingFactor  = cfg.SpreadingFactor;
+        lora_ptr->sx1278.cfg.tx_cfg.ErrorCoding      = cfg.ErrorCoding;
+        lora_ptr->sx1278.cfg.tx_cfg.CrcOn            = cfg.CrcOn;
+        lora_ptr->sx1278.cfg.tx_cfg.ImplicitHeaderOn = cfg.ImplicitHeaderOn;
+        lora_ptr->sx1278.cfg.tx_cfg.FreqHopOn        = cfg.FreqHopOn;
+        lora_ptr->sx1278.cfg.tx_cfg.TxPacketTimeout  = cfg.TxPacketTimeout;
+        lora_ptr->sx1278.cfg.tx_cfg.PayloadLength    = cfg.PayloadLength;
         break;
     }
     case LORA_IOC_RD_RXSIGNAL_PRAM:
