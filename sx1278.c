@@ -185,8 +185,26 @@ ERR_EXIT:
 int SX1278_Read_FIFO(struct spi_device *spi_ptr, uint8_t *data_ptr, uint8_t data_len)
 {
     int result = 0;
-    uint8_t reg = 0x00;
-    uint8_t *pdata = NULL;
+    uint8_t reg = (0x00&0x7F);
+    
+    if((NULL == spi_ptr) || (NULL == data_ptr))
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+
+    result = spi_write_then_read(spi_ptr, &reg, 1, data_ptr, data_len);
+    if (result < 0)
+    {
+        printk(KERN_ERR "%s %d error %d reading %x\n", __FUNCTION__, __LINE__, result, reg);
+        goto ERR_EXIT;
+    }
+
+ERR_EXIT:
+
+    return result;
+#if 0
+    uint8_t reg = (0x00&0x7F);
     struct spi_transfer t[2] = {{0}, {0}};
     struct spi_message m = {{0}};
 
@@ -221,6 +239,7 @@ ERR_EXIT:
     if(pdata)
         kfree(pdata);
     return result;
+#endif
 }
 
 int SX1278_Write_FIFO(struct spi_device *spi_ptr, uint8_t *data_ptr, uint8_t data_len)

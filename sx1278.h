@@ -229,4 +229,6 @@ int SX1278SetRxConfig(SX1278_st_ptr sx1278_ptr);
 int SX1278SetTxConfig(SX1278_st_ptr sx1278_ptr);
 
 int SX1278LoRaSetLNA(SX1278_st_ptr sx1278_ptr, uint8_t val);
+
+int SX1278LoRaGetRxPacketTimeout(SX1278_st_ptr sx1278_ptr, uint32_t *RxPacketTime);
 #endif/*__SX1278_H__*/

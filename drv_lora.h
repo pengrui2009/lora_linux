@@ -20,6 +20,7 @@
 
 #include "sx1278.h"
 
+#define RXBUFFER_SIZE       5
 /*!
  * Radio driver internal state machine states definition
  */
@@ -29,9 +30,18 @@ typedef enum
     RF_RX_RUNNING, //!< The radio is in reception state
     RF_TX_RUNNING, //!< The radio is in transmission state
     RF_CAD,        //!< The radio is doing channel activity detection
+}RadioState_en;
+
+typedef enum
+{
+    RF_ERROR = 0,   //!< The radio is idle
+    RF_RX_DONE, //!< The radio is in reception state
+    RF_TX_DONE, //!< The radio is in transmission state
+    RF_CAD_DONE,        //!< The radio is doing channel activity detection
     RF_RX_TIMEOUT,
     RF_TX_TIMEOUT,
-}RadioState_en;
+}RadioStatus_en;
+
 
 typedef struct _lora_data_st_
 {
@@ -43,18 +53,43 @@ typedef struct _lora_data_st_
     uint8_t doing_len;
     //current tx or rx length
     uint8_t done_len;
-}lora_data_st, *lora_data_st_ptr;;
+}lora_data_st, *lora_data_st_ptr;
+
+typedef struct _lora_rxdata_st_
+{
+    uint8_t data[FIFO_BUFFER_SIZE];
+
+    uint8_t data_len;
+    //need to recv length
+    uint8_t recv_len;
+    
+    int8_t snr;
+
+    int16_t rssi;
+
+}lora_rxdata_st, *lora_rxdata_st_ptr;
+
+typedef struct _lora_rxbuff_st_
+{
+    lora_rxdata_st rxinfo[RXBUFFER_SIZE];
+    
+    uint8_t read_size;
+
+    uint8_t write_size;
+}lora_rx_st, *lora_rx_st_ptr;
 
 typedef struct _lora_info_st 
 {
     char        	*drv_name;
     dev_t		    devt;
+
+    atomic_t 		opened;
     spinlock_t		spinlock;
 //    struct spi_device	*spi_ptr;
     struct list_head	device_entry;
 
     /* buffer is NULL unless this device is open (users > 0) */
-    struct mutex		buf_lock;
+    struct mutex		buf_mutex;
 
     struct mutex		mutex;
     unsigned			users;
@@ -75,6 +110,8 @@ typedef struct _lora_info_st
     struct work_struct work;
     /*the buffer of send*/
     lora_data_st txdata;
+
+    lora_rxdata_st rxdata;
     /**/
     int8_t rx_snr;
     /**/
@@ -86,6 +123,8 @@ typedef struct _lora_info_st
     SX1278_st sx1278;
     /*the state of lora module*/
     RadioState_en state;
+
+    RadioStatus_en statu;
 }lora_info_st, *lora_info_st_ptr;
 
 
