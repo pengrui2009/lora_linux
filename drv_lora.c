@@ -1135,6 +1135,7 @@ static int drv_open(struct inode *inode, struct file *filp)
     
     if(!atomic_dec_and_test(&lora_ptr->opened)) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         result = -EBUSY;
         goto ERR_EXIT;
     }
@@ -1142,12 +1143,14 @@ static int drv_open(struct inode *inode, struct file *filp)
     result = lora_IoInit(&lora_ptr->gpio);
     if (result < 0) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT1;
     }
     
     result = lora_Reset(&lora_ptr->gpio);
     if (result < 0) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT3;
     }
    
@@ -1156,6 +1159,7 @@ static int drv_open(struct inode *inode, struct file *filp)
     result = SX1278RxChainCalibration(&lora_ptr->sx1278);
     if(result < 0)
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT;
     }
 
@@ -1163,6 +1167,7 @@ static int drv_open(struct inode *inode, struct file *filp)
     result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_SLEEP);
     if(result < 0)
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT;
     }
 
@@ -1170,6 +1175,7 @@ static int drv_open(struct inode *inode, struct file *filp)
     result = lora_IoIrqInit(&lora_ptr->gpio);
     if (result < 0) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT2;
     }
 
@@ -1204,6 +1210,7 @@ static int drv_open(struct inode *inode, struct file *filp)
     result = SX1278Init(&lora_ptr->sx1278);
     if (result < 0) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT3;
     }
 
@@ -1213,12 +1220,14 @@ static int drv_open(struct inode *inode, struct file *filp)
     result = SX1278SetRxConfig(&lora_ptr->sx1278);
     if (result < 0) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT3;
     }
 
     result = SX1278StartRx(&lora_ptr->sx1278);
     if (result < 0) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT3;
     }
 
@@ -1228,6 +1237,7 @@ static int drv_open(struct inode *inode, struct file *filp)
     result = SX1278LoRaGetRxPacketTimeout(&lora_ptr->sx1278, &timeout);
     if (result < 0) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT3;
     }
     
@@ -1236,6 +1246,7 @@ static int drv_open(struct inode *inode, struct file *filp)
     result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_RECEIVER);
     if (result < 0) 
     {
+        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT3;
     }
 
@@ -1655,6 +1666,7 @@ static int drv_release(struct inode *inode, struct file *filp)
 
     mutex_lock(&device_list_lock);
 
+    cancel_delayed_work(&lora_ptr->delaywork);
     lora_IoIrqDeInit(&lora_ptr->gpio); 
     lora_IoDeInit(&lora_ptr->gpio);
 
