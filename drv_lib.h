@@ -41,12 +41,12 @@ typedef struct _Rx_Config_st_
     uint8_t SpreadingFactor;            // LORA [6: 64, 7: 128, 8: 256, 9: 512, 10: 1024, 11: 2048, 12: 4096  chips]
     uint8_t ErrorCoding;                // LORA [1: 4/5, 2: 4/6, 3: 4/7, 4: 4/8]
     bool CrcOn;                         // [0: OFF, 1: ON]
-    bool ImplicitHeaderOn;              // [0: OFF, 1: ON]
-    bool RxSingleOn;                    // [0: Continuous, 1 Single]
+//    bool ImplicitHeaderOn;              // [0: OFF, 1: ON]
+//    bool RxSingleOn;                    // [0: Continuous, 1 Single]
     bool FreqHopOn;                     // [0: OFF, 1: ON]
     bool IqInverted;                    // [0: OFF, 1: ON]
     uint8_t HopPeriod;                  // Hops every frequency hopping period symbols
-    uint32_t RxPacketTimeout;
+//    uint32_t RxPacketTimeout;
     uint8_t PayloadLength;
 }Rx_Config_st, *Rx_Config_st_ptr;
 
