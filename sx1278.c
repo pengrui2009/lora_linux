@@ -3862,7 +3862,7 @@ int SX1278StartCad(SX1278_st_ptr sx1278_ptr)
     int result = 0;
     uint8_t RegIrqFlagsMask = 0;
     uint8_t RegDioMapping1 = 0;
-    uint8_t RegDioMapping2 = 0;
+    //uint8_t RegDioMapping2 = 0;
 
     if(NULL == sx1278_ptr)
     {
@@ -3889,10 +3889,16 @@ int SX1278StartCad(SX1278_st_ptr sx1278_ptr)
     {
         goto ERR_EXIT;
     }
-                                // RxDone                   RxTimeout                   FhssChangeChannel           CadDone
-    RegDioMapping1 = RFLR_DIOMAPPING1_DIO0_00 | RFLR_DIOMAPPING1_DIO1_00 | RFLR_DIOMAPPING1_DIO2_00 | RFLR_DIOMAPPING1_DIO3_00;
+
+    result =SX1278_Read_Reg(sx1278_ptr->spi_ptr, REG_LR_DIOMAPPING1, &RegDioMapping1);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+                                // CadDone
+    RegDioMapping1 = ((RegDioMapping1 & RFLR_DIOMAPPING1_DIO3_MASK ) | RFLR_DIOMAPPING1_DIO3_00);
                                 // CAD Detected              ModeReady
-    RegDioMapping2 = RFLR_DIOMAPPING2_DIO4_00 | RFLR_DIOMAPPING2_DIO5_00;
+    //RegDioMapping2 = RFLR_DIOMAPPING2_DIO4_00 | RFLR_DIOMAPPING2_DIO5_00;
 
     result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_DIOMAPPING1, RegDioMapping1);
     if(result < 0)
@@ -3900,11 +3906,11 @@ int SX1278StartCad(SX1278_st_ptr sx1278_ptr)
         goto ERR_EXIT;
     }
     
-    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_DIOMAPPING1, RegDioMapping2);
-    if(result < 0)
-    {
-        goto ERR_EXIT;
-    }
+    //result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_DIOMAPPING1, RegDioMapping2);
+    //if(result < 0)
+    //{
+    //    goto ERR_EXIT;
+    //}
 
     result = SX1278LoRaSetOpMode(sx1278_ptr, RFLR_OPMODE_CAD);
     if(result < 0)
@@ -3917,40 +3923,46 @@ ERR_EXIT:
     return result;
 }
 
-int SX1278CadFinished(SX1278_st_ptr sx1278_ptr)
+int SX1278CadDone(SX1278_st_ptr sx1278_ptr)
 {
     int result = 0;
+    uint8_t RegIrqFlags = 0;
 
     if(NULL == sx1278_ptr)
     {
         result = -ENOMEM;
         goto ERR_EXIT;
     }
-    
-    result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDONE);
+
+    result = SX1278_Read_Reg(sx1278_ptr->spi_ptr, REG_LR_IRQFLAGS, &RegIrqFlags);
     if(result < 0)
     {
         goto ERR_EXIT;
     }
-    //if( DIO4 == 1 ) // CAD Detected interrupt
+    printk(KERN_ERR "RegIrqFlags:0x%0x\n", RegIrqFlags); 
+    if((RegIrqFlags&RFLR_IRQFLAGS_CADDETECTED) == RFLR_IRQFLAGS_CADDETECTED)
     {
         // Clear Irq
-        result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDETECTED);
+        result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_IRQFLAGS, (RFLR_IRQFLAGS_CADDETECTED |RFLR_IRQFLAGS_CADDONE));
         if(result < 0)
         {
             goto ERR_EXIT;
-        }        
-        // CAD detected, we have a LoRa preamble
-        //RFLRState = RFLR_STATE_RX_INIT;
-        //result = RF_CHANNEL_ACTIVITY_DETECTED;
-    } 
-    //else
-    {    
-        // The device goes in Standby Mode automatically    
-        //RFLRState = RFLR_STATE_IDLE;
-        //result = RF_CHANNEL_EMPTY;
-    }
+        }
 
+        result = 1;
+    }
+    else
+    {
+        // Clear Irq
+        result = SX1278_Write_Reg(sx1278_ptr->spi_ptr, REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDONE);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
+
+        result = 0;
+    }
+    
 ERR_EXIT:
 
     return result;

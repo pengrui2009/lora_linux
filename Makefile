@@ -2,8 +2,8 @@ INSTALLDIR := /mnt/hgfs/share/ko
 #STAGING_DIR := /home/linux/openwrt/openwrt-offical/staging_dir
 #CROSS_COMPILE := 
 
-#KERNELDIR := /home/linux/openwrt/gateway/linux_3.14/
-KERNELDIR := /home/pengrui/data/kernel/linux-3.14.52/
+KERNELDIR := /home/linux/openwrt/gateway/linux_3.14/
+#KERNELDIR := /home/pengrui/data/kernel/linux-3.14.52/
 PWD := $(shell pwd)
 
 obj-m := lora.o
@@ -14,7 +14,8 @@ all:
 	cp lora.ko $(INSTALLDIR)
 	arm-linux-gnueabihf-gcc -o test-poll test-poll.c
 	arm-linux-gnueabihf-gcc -o test_send test_send.c
-	cp test-poll test_send $(INSTALLDIR)
+	arm-linux-gnueabihf-gcc -o test_cad test_cad.c
+	cp test-poll test_send test_cad $(INSTALLDIR)
 clean:
 	-rm -rf *.o *.ko *.mod.c .*.cmd .tmp_versions Module.symvers modules.order $(INSTALLDIR)/spidev.ko
 

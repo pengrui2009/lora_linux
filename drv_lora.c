@@ -308,43 +308,14 @@ irqreturn_t SX1278_OnDio2Irq(int irq, void *dev_id)
 
 irqreturn_t SX1278_OnDio3Irq(int irq, void *dev_id)
 {
-    //uint8_t val = 0;
+    lora_info_st_ptr lora_ptr = NULL;
+    SX1278_Gpio_st_ptr sx1278_gpio_ptr = (SX1278_Gpio_st_ptr)dev_id;
+
+    lora_ptr = container_of(sx1278_gpio_ptr, lora_info_st, gpio);
     printk(KERN_ERR "irq3\n");
-#if 0
-    switch( drv_info.sx1278_cfg.Modem )
-    {
-    case MODEM_FSK:
-        break;
-    case MODEM_LORA:
-        SX1278_Read_Reg( REG_LR_IRQFLAGS , &val);
-        
-        if( ( val & RFLR_IRQFLAGS_CADDETECTED ) == RFLR_IRQFLAGS_CADDETECTED )
-        {
-            // Clear Irq
-            SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDETECTED | RFLR_IRQFLAGS_CADDONE );
-            /*
-            if( ( RadioEvents != NULL ) && ( RadioEvents->CadDone != NULL ) )
-            {
-                RadioEvents->CadDone( true );
-            }
-            */
-        }
-        else
-        {
-            // Clear Irq
-            SX1278_Write_Reg( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_CADDONE );
-            /*
-            if( ( RadioEvents != NULL ) && ( RadioEvents->CadDone != NULL ) )
-            {
-                RadioEvents->CadDone( false );
-            }
-            */
-        }
-        break;
-    default:
-        break;
-    }
-#endif
+
+    schedule_work(&lora_ptr->work);
+    
     return IRQ_HANDLED;
 }
 
@@ -1094,6 +1065,24 @@ static void lora_work_func(struct work_struct *dw)
         }
          
         break;
+    case RF_CAD:
+    {
+        result = SX1278CadDone(&lora_ptr->sx1278);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
+
+        lora_ptr->state = RF_IDLE;
+        
+        if(result == 1)
+        {
+            lora_ptr->statu = RF_CAD_DONE;
+        }
+
+        wake_up_interruptible(&lora_ptr->wq);
+        break;
+    }
     default:
         break;
     }
@@ -1232,21 +1221,21 @@ static int drv_open(struct inode *inode, struct file *filp)
     lora_ptr->state = RF_IDLE;
     lora_ptr->statu = RF_ERROR;
     
-    result = SX1278SetRxConfig(&lora_ptr->sx1278);
-    if (result < 0) 
-    {
-        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
-        goto ERR_EXIT3;
-    }
+    //result = SX1278SetRxConfig(&lora_ptr->sx1278);
+    //if (result < 0) 
+    //{
+    //    printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
+    //    goto ERR_EXIT3;
+    //}
 
-    result = SX1278StartRx(&lora_ptr->sx1278);
-    if (result < 0) 
-    {
-        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
-        goto ERR_EXIT3;
-    }
+    //result = SX1278StartRx(&lora_ptr->sx1278);
+    //if (result < 0) 
+    //{
+    //    printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
+    //    goto ERR_EXIT3;
+    //}
 
-    lora_ptr->state = RF_RX_RUNNING;
+    //lora_ptr->state = RF_RX_RUNNING;
 
     //timeout handler
     //result = SX1278LoRaGetRxPacketTimeout(&lora_ptr->sx1278, &timeout);
@@ -1258,12 +1247,12 @@ static int drv_open(struct inode *inode, struct file *filp)
     
     //schedule_delayed_work(&lora_ptr->delaywork, timeout * HZ);
     
-    result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_RECEIVER);
-    if (result < 0) 
-    {
-        printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
-        goto ERR_EXIT3;
-    }
+    //result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_RECEIVER);
+    //if (result < 0) 
+    //{
+    //    printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
+    //    goto ERR_EXIT3;
+    //}
 
     mutex_unlock(&device_list_lock);
 
@@ -1599,8 +1588,6 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             goto ERR_EXIT;
         }
         
-         
-
         lora_ptr->sx1278.cfg.tx_cfg.RFFrequency      = cfg.RFFrequency;
         lora_ptr->sx1278.cfg.tx_cfg.Power            = cfg.Power;
         lora_ptr->sx1278.cfg.tx_cfg.SignalBw         = cfg.SignalBw;
@@ -1615,12 +1602,80 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     }
     case LORA_IOC_RD_RXSIGNAL_PRAM:
     {
-        result = SX1278StartCad(&lora_ptr->sx1278);
+        //result = SX1278StartCad(&lora_ptr->sx1278);
 
         //irq 3 cad done
 
         //irq4 cad detected
-        result = __put_user(arg, &result);
+        //result = __put_user(arg, &result);
+        break;
+    }
+    case LORA_IOC_CAD:
+    {
+        uint8_t status = 0;
+        mutex_lock(&lora_ptr->mutex);
+
+        lora_ptr->state = RF_CAD;
+
+        lora_ptr->statu = RF_ERROR;
+        
+        result = SX1278StartCad(&lora_ptr->sx1278);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }
+        
+        interruptible_sleep_on(&(lora_ptr->wq));
+
+        
+        if(lora_ptr->statu == RF_CAD_DONE)
+        {
+            status = 1;
+        }else{
+            status = 0;
+        }
+        result = put_user(status, (uint8_t __user *)arg);
+        if(result < 0)
+        {
+            goto ERR_EXIT;
+        }        
+
+        mutex_unlock(&lora_ptr->mutex);
+        break;
+    }
+    case LORA_IOC_WR_WORK:
+    {
+        uint8_t work_on = 0;
+        result = get_user(work_on, (uint8_t __user *)arg);
+        if(result)
+        {
+	    goto ERR_EXIT;
+        }
+         
+        if(work_on)
+        { 
+            result = SX1278SetRxConfig(&lora_ptr->sx1278);
+            if (result < 0) 
+            {
+                printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
+                goto ERR_EXIT;
+            }
+
+            result = SX1278StartRx(&lora_ptr->sx1278);
+            if (result < 0) 
+            {
+                printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
+                goto ERR_EXIT;
+            }
+
+            lora_ptr->state = RF_RX_RUNNING;
+    
+            result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_RECEIVER);
+            if(result < 0)
+            {
+                goto ERR_EXIT;
+            }
+        }
         break;
     }
     default:
@@ -1630,171 +1685,6 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 ERR_EXIT:
 
     return result;
-#if 0
-    int            err = 0;
-    int            retval = 0;
-    lora_info_st_ptr    lora_ptr;
-    struct spi_device    *spi;
-    u32            tmp;
-    unsigned        n_ioc;
-    struct spi_ioc_transfer    *ioc;
-    /* Check type and command number */
-    if (_IOC_TYPE(cmd) != SPI_IOC_MAGIC)
-        return -ENOTTY;
-
-    /* Check access direction once here; don't repeat below.
-     * IOC_DIR is from the user perspective, while access_ok is
-     * from the kernel perspective; so they look reversed.
-     */
-    if (_IOC_DIR(cmd) & _IOC_READ)
-        err = !access_ok(VERIFY_WRITE,
-                (void __user *)arg, _IOC_SIZE(cmd));
-    if (err == 0 && _IOC_DIR(cmd) & _IOC_WRITE)
-        err = !access_ok(VERIFY_READ,
-                (void __user *)arg, _IOC_SIZE(cmd));
-    if (err)
-        return -EFAULT;
-
-    /* guard against device removal before, or while,
-     * we issue this ioctl.
-     */
-    lora_ptr = filp->private_data;
-    spin_lock_irq(&drv_info.spi_lock);
-    spi = spi_dev_get(lora_spi);
-    spin_unlock_irq(&drv_info.spi_lock);
-
-    if (spi == NULL)
-        return -ESHUTDOWN;
-
-    /* use the buffer lock here for triple duty:
-     *  - prevent I/O (from us) so calling spi_setup() is safe;
-     *  - prevent concurrent SPI_IOC_WR_* from morphing
-     *    data fields while SPI_IOC_RD_* reads them;
-     *  - SPI_IOC_MESSAGE needs the buffer locked "normally".
-     */
-    mutex_lock(&drv_info.buf_lock);
-
-    switch (cmd) {
-    /* read requests */
-    case SPI_IOC_RD_MODE:
-        retval = __put_user(spi->mode & SPI_MODE_MASK,
-                    (__u8 __user *)arg);
-        break;
-    case SPI_IOC_RD_LSB_FIRST:
-        retval = __put_user((spi->mode & SPI_LSB_FIRST) ?  1 : 0,
-                    (__u8 __user *)arg);
-        break;
-    case SPI_IOC_RD_BITS_PER_WORD:
-        retval = __put_user(spi->bits_per_word, (__u8 __user *)arg);
-        break;
-    case SPI_IOC_RD_MAX_SPEED_HZ:
-        retval = __put_user(spi->max_speed_hz, (__u32 __user *)arg);
-        break;
-
-    /* write requests */
-    case SPI_IOC_WR_MODE:
-        retval = __get_user(tmp, (u8 __user *)arg);
-        if (retval == 0) {
-            u8    save = spi->mode;
-
-            if (tmp & ~SPI_MODE_MASK) {
-                retval = -EINVAL;
-                break;
-            }
-
-            tmp |= spi->mode & ~SPI_MODE_MASK;
-            spi->mode = (u8)tmp;
-            retval = spi_setup(spi);
-            if (retval < 0)
-                spi->mode = save;
-            else
-                dev_dbg(&spi->dev, "spi mode %02x\n", tmp);
-        }
-        break;
-    case SPI_IOC_WR_LSB_FIRST:
-        retval = __get_user(tmp, (__u8 __user *)arg);
-        if (retval == 0) {
-            u8    save = spi->mode;
-
-            if (tmp)
-                spi->mode |= SPI_LSB_FIRST;
-            else
-                spi->mode &= ~SPI_LSB_FIRST;
-            retval = spi_setup(spi);
-            if (retval < 0)
-                spi->mode = save;
-            else
-                dev_dbg(&spi->dev, "%csb first\n",
-                        tmp ? 'l' : 'm');
-        }
-        break;
-    case SPI_IOC_WR_BITS_PER_WORD:
-        retval = __get_user(tmp, (__u8 __user *)arg);
-        if (retval == 0) {
-            u8    save = spi->bits_per_word;
-
-            spi->bits_per_word = tmp;
-            retval = spi_setup(spi);
-            if (retval < 0)
-                spi->bits_per_word = save;
-            else
-                dev_dbg(&spi->dev, "%d bits per word\n", tmp);
-        }
-        break;
-    case SPI_IOC_WR_MAX_SPEED_HZ:
-        retval = __get_user(tmp, (__u32 __user *)arg);
-        if (retval == 0) {
-            u32    save = spi->max_speed_hz;
-
-            spi->max_speed_hz = tmp;
-            retval = spi_setup(spi);
-            if (retval < 0)
-                spi->max_speed_hz = save;
-            else
-                dev_dbg(&spi->dev, "%d Hz (max)\n", tmp);
-        }
-        break;
-
-    default:
-        /* segmented and/or full-duplex I/O request */
-        if (_IOC_NR(cmd) != _IOC_NR(SPI_IOC_MESSAGE(0))
-                || _IOC_DIR(cmd) != _IOC_WRITE) {
-            retval = -ENOTTY;
-            break;
-        }
-
-        tmp = _IOC_SIZE(cmd);
-        if ((tmp % sizeof(struct spi_ioc_transfer)) != 0) {
-            retval = -EINVAL;
-            break;
-        }
-        n_ioc = tmp / sizeof(struct spi_ioc_transfer);
-        if (n_ioc == 0)
-            break;
-
-        /* copy into scratch area */
-        ioc = kmalloc(tmp, GFP_KERNEL);
-        if (!ioc) {
-            retval = -ENOMEM;
-            break;
-        }
-        if (__copy_from_user(ioc, (void __user *)arg, tmp)) {
-            kfree(ioc);
-            retval = -EFAULT;
-            break;
-        }
-
-        /* translate to spi_message, execute */
-        retval = spidev_message(drv_info_ptr, ioc, n_ioc);
-        kfree(ioc);
-        break;
-    }
-
-    mutex_unlock(&drv_info.buf_lock);
-    spi_dev_put(spi);
-    return retval;
-#endif
-    return 0;
 }
 
 #ifdef CONFIG_COMPAT
