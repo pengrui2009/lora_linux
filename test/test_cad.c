@@ -18,6 +18,11 @@ int main(void)
     }
    
     result = ioctl(fd, LORA_IOC_CAD, &val);
+    if(result < 0)
+    {
+	goto ERR_EXIT;
+    }
+    //val =1, detected signal on the channel
     printf("val:%d\n", val);
 ERR_EXIT:
     close(fd);

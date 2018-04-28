@@ -1,22 +1,23 @@
-#include <stdio.h>  
-#include <sys/types.h>  
-#include <sys/stat.h>  
+#include <stdio.h> 
+#include <stdbool.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/ioctl.h> 
 #include <fcntl.h>  
 #include <unistd.h>   //sleep  
 #include <poll.h>  
-#include <signal.h>  
 #include <fcntl.h>  
-  
-int fd;  
+#include "drv_lib.h"  
   
   
 static unsigned char buffer[50]; 
 int main(int argc ,char *argv[])  
 {  
+    int fd;  
     int flag; 
     int result = 0; 
+    unsigned char val = 0;
     fd_set fds;
-    //signal(SIGIO,mysignal_fun);  
   
     fd = open("/dev/lora0",O_RDWR);  
     if (fd < 0)  
@@ -24,14 +25,21 @@ int main(int argc ,char *argv[])
         printf("open error\n");  
     }  
   
+    val = 1;
+    result = ioctl(fd, LORA_IOC_WR_WORK, &val);
+    if (result < 0)  
+    {  
+        printf("ioctl error\n");  
+    }  
+
     while(1)  
     {
         int i = 0; 
         struct timeval timeout = {3, 0};
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
-        
-        /* 为了测试，主函数里，什么也不做 */  
+                
+
         result = select(fd +1, &fds, &fds, NULL, &timeout);
 	if(result)
         {

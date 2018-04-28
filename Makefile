@@ -12,10 +12,10 @@ lora-objs := sx1278.o drv_lora.o
 all:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 	cp lora.ko $(INSTALLDIR)
-	arm-linux-gnueabihf-gcc -o test-poll test-poll.c
-	arm-linux-gnueabihf-gcc -o test_send test_send.c
-	arm-linux-gnueabihf-gcc -o test_cad test_cad.c
-	cp test-poll test_send test_cad $(INSTALLDIR)
+	cd test&&arm-linux-gnueabihf-gcc -o test_poll test_poll.c -I../
+	cd test&&arm-linux-gnueabihf-gcc -o test_send test_send.c -I../
+	cd test&&arm-linux-gnueabihf-gcc -o test_cad test_cad.c -I../
+	cp test/test_poll test/test_send test/test_cad $(INSTALLDIR)
 clean:
 	-rm -rf *.o *.ko *.mod.c .*.cmd .tmp_versions Module.symvers modules.order $(INSTALLDIR)/spidev.ko
 

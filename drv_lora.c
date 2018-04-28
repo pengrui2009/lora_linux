@@ -1488,7 +1488,7 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             goto ERR_EXIT;
         }
         
-        if((cfg.RFFrequency < 137000000) || (cfg.RFFrequency > 960000000))
+        if((cfg.RFFrequency < 137000000) || (cfg.RFFrequency > 525000000))
         {
             result = -EINVAL;
             goto ERR_EXIT;
@@ -1558,7 +1558,7 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             goto ERR_EXIT;
         }
         
-        if((cfg.RFFrequency < 137000000) || (cfg.RFFrequency > 960000000))
+        if((cfg.RFFrequency < 137000000) || (cfg.RFFrequency > 525000000))
         {
             result = -EINVAL;
             goto ERR_EXIT;
