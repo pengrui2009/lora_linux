@@ -21,6 +21,8 @@
 #include "sx1278.h"
 
 #define RXBUFFER_SIZE       5
+#define SX1278_TX_MAX_LENGTH    256
+#define SX1278_RX_MAX_LENGTH    256
 /*!
  * Radio driver internal state machine states definition
  */
@@ -78,11 +80,36 @@ typedef struct _lora_rxbuff_st_
     uint8_t write_size;
 }lora_rx_st, *lora_rx_st_ptr;
 
+struct sx1278_platform_data {
+    SX1278_Gpio_st gpio;
+
+    int irq_dio0;
+    int irq_dio1;
+    int irq_dio2;
+    int irq_dio3;
+    int irq_dio4;
+
+};
+
+struct sx1278_transfer_buffer {
+	uint8_t rx_buf[SX1278_RX_MAX_LENGTH];
+	uint8_t tx_buf[SX1278_RX_MAX_LENGTH] ____cacheline_aligned;
+};
+
+
+struct lora_transfer_function {
+	int (*write)(struct device *spi, u8 addr, int len, u8 *data);
+	int (*read)(struct device *spi, u8 addr, int len, u8 *data);
+};
+
+
 typedef struct _lora_info_st 
 {
     char        	*drv_name;
     dev_t		    devt;
-
+    struct sx1278_platform_data plat_data;
+    uint16_t bus_type;
+    struct mutex lock;
     atomic_t 		opened;
     spinlock_t		spinlock;
 //    struct spi_device	*spi_ptr;
@@ -90,7 +117,7 @@ typedef struct _lora_info_st
 
     /* buffer is NULL unless this device is open (users > 0) */
     struct mutex		buf_mutex;
-
+    
     struct mutex		mutex;
     unsigned			users;
     uint8_t			*buffer;
@@ -116,9 +143,12 @@ typedef struct _lora_info_st
     int8_t rx_snr;
     /**/
     int16_t rx_rssi;
+
+    const struct lora_transfer_function *tf;
+    struct sx1278_transfer_buffer tb;
     
     /*the gpio pin info of sx1278*/
-    SX1278_Gpio_st gpio;
+    //SX1278_Gpio_st gpio;
     /*the spi and config info of sx1278*/
     SX1278_st sx1278;
     /*the state of lora module*/

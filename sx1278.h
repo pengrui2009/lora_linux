@@ -110,7 +110,7 @@ typedef struct _SX1278_Cfg_st_
 
 typedef struct _SX1278_st_
 {
-    struct spi_device *spi_ptr;
+    struct device *dev_ptr;
     
     SX1278_Cfg_st cfg;
 }SX1278_st, *SX1278_st_ptr;
@@ -119,22 +119,22 @@ typedef struct _SX1278_st_
  */
 typedef struct _SX1278_Gpio_st_
 {
-    int        Reset;
-    int        DIO0;
-    int        DIO1;
-    int        DIO2;
-    int        DIO3;
-    int        DIO4;
-    int        DIO5;
+    int        gpio_reset;
+    int        gpio_dio0;
+    int        gpio_dio1;
+    int        gpio_dio2;
+    int        gpio_dio3;
+    int        gpio_dio4;
+    int        gpio_dio5;
 }SX1278_Gpio_st, *SX1278_Gpio_st_ptr;
 
-int SX1278_Read_Reg(struct spi_device *spi_ptr, uint8_t addr, uint8_t *data_ptr);
+int SX1278_Read_Reg(struct device *dev_ptr, uint8_t addr, uint8_t *data_ptr);
 
-int SX1278_Write_Reg(struct spi_device *spi_ptr, uint8_t addr, uint8_t data);
+int SX1278_Write_Reg(struct device *dev_ptr, uint8_t addr, uint8_t data);
 
-int SX1278_Read_FIFO(struct spi_device *spi_ptr, uint8_t *data_ptr, uint8_t data_len);
+int SX1278_Read_FIFO(struct device *dev_ptr, uint8_t *data_ptr, uint8_t data_len);
 
-int SX1278_Write_FIFO(struct spi_device *spi_ptr, uint8_t *data_ptr, uint8_t data_len);
+int SX1278_Write_FIFO(struct device *dev_ptr, uint8_t *data_ptr, uint8_t data_len);
 
 int SX1278LoRaSetDefaults(SX1278_st_ptr sx1278_ptr);
 

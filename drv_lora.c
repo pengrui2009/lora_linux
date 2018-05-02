@@ -105,9 +105,9 @@ MODULE_PARM_DESC(bufsiz, "data bytes in biggest supported SPI message");
 irqreturn_t SX1278_OnDio0Irq(int irq, void *dev_id)
 {
     lora_info_st_ptr lora_ptr = NULL;
-    SX1278_Gpio_st_ptr sx1278_gpio_ptr = (SX1278_Gpio_st_ptr)dev_id;
+    struct sx1278_platform_data *platdata_ptr = (struct sx1278_platform_data *)dev_id;
 
-    lora_ptr = container_of(sx1278_gpio_ptr, lora_info_st, gpio);
+    lora_ptr = container_of(platdata_ptr, lora_info_st, plat_data);
 
     printk(KERN_ERR "irq0 state:%d\n", lora_ptr->state); 
     schedule_work(&lora_ptr->work);
@@ -309,9 +309,9 @@ irqreturn_t SX1278_OnDio2Irq(int irq, void *dev_id)
 irqreturn_t SX1278_OnDio3Irq(int irq, void *dev_id)
 {
     lora_info_st_ptr lora_ptr = NULL;
-    SX1278_Gpio_st_ptr sx1278_gpio_ptr = (SX1278_Gpio_st_ptr)dev_id;
+    struct sx1278_platform_data *platdata_ptr = (struct sx1278_platform_data *)dev_id;
 
-    lora_ptr = container_of(sx1278_gpio_ptr, lora_info_st, gpio);
+    lora_ptr = container_of(platdata_ptr, lora_info_st, plat_data);
     printk(KERN_ERR "irq3\n");
 
     schedule_work(&lora_ptr->work);
@@ -353,9 +353,9 @@ int lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         goto ERR_EXIT;
     }
    
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO0))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio0))
     {
-        result = gpio_request(sx1278_gpio_ptr->DIO0, "DIO0");
+        result = gpio_request(sx1278_gpio_ptr->gpio_dio0, "DIO0");
         if(result < 0)
         {
             printk(KERN_ERR "gpio_request DIO0 error\n");
@@ -363,9 +363,9 @@ int lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO1))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio1))
     {
-        result = gpio_request(sx1278_gpio_ptr->DIO1, "DIO1");
+        result = gpio_request(sx1278_gpio_ptr->gpio_dio1, "DIO1");
         if(result < 0)
         {
             printk(KERN_ERR "gpio_request DIO1 error\n");
@@ -373,9 +373,9 @@ int lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO2))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio2))
     {
-        result = gpio_request(sx1278_gpio_ptr->DIO2, "DIO2");
+        result = gpio_request(sx1278_gpio_ptr->gpio_dio2, "DIO2");
         if(result < 0)
         {
             printk(KERN_ERR "gpio_request DIO2 error\n");
@@ -383,9 +383,9 @@ int lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO3))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio3))
     {
-        result = gpio_request(sx1278_gpio_ptr->DIO3, "DIO3");
+        result = gpio_request(sx1278_gpio_ptr->gpio_dio3, "DIO3");
         if(result < 0)
         {
             printk(KERN_ERR "gpio_request DIO3 error\n");
@@ -393,9 +393,9 @@ int lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO4))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio4))
     {
-        result = gpio_request(sx1278_gpio_ptr->DIO4, "DIO4");
+        result = gpio_request(sx1278_gpio_ptr->gpio_dio4, "DIO4");
         if(result < 0)
         {
             printk(KERN_ERR "gpio_request DIO4 error\n");
@@ -403,9 +403,9 @@ int lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->Reset))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_reset))
     {
-        result = gpio_request(sx1278_gpio_ptr->Reset, "RESET");
+        result = gpio_request(sx1278_gpio_ptr->gpio_reset, "RESET");
         if(result < 0)
         {
             printk(KERN_ERR "gpio_request RESET error\n");
@@ -415,39 +415,38 @@ int lora_IoInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
 
     return result;
 ERR_EXIT5:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO4))
-        gpio_free(sx1278_gpio_ptr->DIO4);
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio4))
+        gpio_free(sx1278_gpio_ptr->gpio_dio4);
 ERR_EXIT4:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO3))
-        gpio_free(sx1278_gpio_ptr->DIO3);
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio3))
+        gpio_free(sx1278_gpio_ptr->gpio_dio3);
 ERR_EXIT3:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO2))
-        gpio_free(sx1278_gpio_ptr->DIO2);
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio2))
+        gpio_free(sx1278_gpio_ptr->gpio_dio2);
 ERR_EXIT2:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO1))
-        gpio_free(sx1278_gpio_ptr->DIO1);
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio1))
+        gpio_free(sx1278_gpio_ptr->gpio_dio1);
 ERR_EXIT1:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO0))
-        gpio_free(sx1278_gpio_ptr->DIO0);
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio0))
+        gpio_free(sx1278_gpio_ptr->gpio_dio0);
 ERR_EXIT:
     return result;
 }
 
-int lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+int lora_IoIrqInit(struct sx1278_platform_data *platdata_ptr)
 {
     int irq = 0;
     int result = 0;
 
-    if(NULL == sx1278_gpio_ptr)
+    if(NULL == platdata_ptr)
     {
         result = -ENOMEM;
         goto ERR_EXIT0;
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO0))
+    if(platdata_ptr->irq_dio0)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO0);
-        result = request_irq(irq , SX1278_OnDio0Irq, IRQF_TRIGGER_RISING, "DIO0_IRQ", (void *)sx1278_gpio_ptr);
+        result = request_irq(platdata_ptr->irq_dio0, SX1278_OnDio0Irq, IRQF_TRIGGER_RISING, "DIO0_IRQ", (void *)platdata_ptr);
         if(result)     
         {       
             printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
@@ -456,10 +455,9 @@ int lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO1))
+    if(platdata_ptr->irq_dio1)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO1);
-        result = request_irq(irq , SX1278_OnDio1Irq, IRQF_TRIGGER_RISING, "DIO1_IRQ", (void *)sx1278_gpio_ptr);
+        result = request_irq(platdata_ptr->irq_dio1 , SX1278_OnDio1Irq, IRQF_TRIGGER_RISING, "DIO1_IRQ", (void *)platdata_ptr);
         if(result)     
         {       
             printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
@@ -468,10 +466,9 @@ int lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO2))
+    if(platdata_ptr->irq_dio2)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO2);
-        result = request_irq(irq , SX1278_OnDio2Irq, IRQF_TRIGGER_RISING, "DIO2_IRQ", (void *)sx1278_gpio_ptr);
+        result = request_irq(platdata_ptr->irq_dio2 , SX1278_OnDio2Irq, IRQF_TRIGGER_RISING, "DIO2_IRQ", (void *)platdata_ptr);
         if(result)     
         {       
             printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
@@ -480,10 +477,9 @@ int lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO3))
+    if(platdata_ptr->irq_dio3)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO3);
-        result = request_irq(irq , SX1278_OnDio3Irq, IRQF_TRIGGER_RISING, "DIO3_IRQ", (void *)sx1278_gpio_ptr);
+        result = request_irq(platdata_ptr->irq_dio3 , SX1278_OnDio3Irq, IRQF_TRIGGER_RISING, "DIO3_IRQ", (void *)platdata_ptr);
         if(result)     
         {       
             printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
@@ -492,10 +488,9 @@ int lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         }
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO4))
+    if(platdata_ptr->irq_dio4)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO4);
-        result = request_irq(irq , SX1278_OnDio0Irq, IRQF_TRIGGER_RISING, "DIO4_IRQ", (void *)sx1278_gpio_ptr);
+        result = request_irq(platdata_ptr->irq_dio4 , SX1278_OnDio0Irq, IRQF_TRIGGER_RISING, "DIO4_IRQ", (void *)platdata_ptr);
         if(result)     
         {       
             printk(KERN_ERR "%s %d request_irq ERROR\n", __FUNCTION__, __LINE__);
@@ -507,28 +502,24 @@ int lora_IoIrqInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
     return result;
 
 ERR_EXIT4:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO3))
+    if(platdata_ptr->irq_dio3)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO3);
-        free_irq(irq, sx1278_gpio_ptr);    
+        free_irq(platdata_ptr->irq_dio3, platdata_ptr);    
     }
 ERR_EXIT3:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO2))
+    if(platdata_ptr->irq_dio2)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO2);
-        free_irq(irq, NULL);
+        free_irq(platdata_ptr->irq_dio2, platdata_ptr);
     }
 ERR_EXIT2:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO1))
+    if(platdata_ptr->irq_dio1)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO1);
-        free_irq(irq, NULL);
+        free_irq(platdata_ptr->irq_dio1, platdata_ptr);
     }
 ERR_EXIT1:
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO0))
+    if(platdata_ptr->irq_dio0)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO0);
-        free_irq(irq, NULL);
+        free_irq(platdata_ptr->irq_dio0, platdata_ptr);
     }
 ERR_EXIT0:
     return result;
@@ -544,79 +535,74 @@ int lora_IoDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
         goto ERR_EXIT;
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO0))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio0))
     {
-        gpio_free(sx1278_gpio_ptr->DIO0);
+        gpio_free(sx1278_gpio_ptr->gpio_dio0);
     }
     
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO1))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio1))
     {
-        gpio_free(sx1278_gpio_ptr->DIO1);
+        gpio_free(sx1278_gpio_ptr->gpio_dio1);
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO2))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio2))
     {
-        gpio_free(sx1278_gpio_ptr->DIO2);
+        gpio_free(sx1278_gpio_ptr->gpio_dio2);
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO3))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio3))
     {
-        gpio_free(sx1278_gpio_ptr->DIO3);
+        gpio_free(sx1278_gpio_ptr->gpio_dio3);
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO4))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_dio4))
     {
-        gpio_free(sx1278_gpio_ptr->DIO4);
+        gpio_free(sx1278_gpio_ptr->gpio_dio4);
     }
    
-    if(gpio_is_valid(sx1278_gpio_ptr->Reset))
+    if(gpio_is_valid(sx1278_gpio_ptr->gpio_reset))
     {
-        gpio_free(sx1278_gpio_ptr->Reset);
+        gpio_free(sx1278_gpio_ptr->gpio_reset);
     }
 ERR_EXIT:
 
     return result;
 }
 
-int lora_IoIrqDeInit(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
+int lora_IoIrqDeInit(struct sx1278_platform_data *plat_ptr)
 {
     int irq = 0;
     int result = 0;
 
-    if(NULL == sx1278_gpio_ptr)
+    if(NULL == plat_ptr)
     {
         result = -ENOMEM;
         goto ERR_EXIT;
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO1))
+    if(plat_ptr->irq_dio0)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO0);
-        free_irq(irq, sx1278_gpio_ptr);
+        free_irq(plat_ptr->irq_dio0, plat_ptr);
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO1))
+    if(plat_ptr->irq_dio1)
     {
-       irq = gpio_to_irq(sx1278_gpio_ptr->DIO1);
-       free_irq(irq, sx1278_gpio_ptr);
+       free_irq(plat_ptr->irq_dio1, plat_ptr);
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO2))
+    if(plat_ptr->irq_dio2)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO2);
-        free_irq(irq, sx1278_gpio_ptr);
+        free_irq(plat_ptr->irq_dio2, plat_ptr);
     }
 
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO3))
+    if(plat_ptr->irq_dio3)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO3);
-        free_irq(irq, sx1278_gpio_ptr);
+        free_irq(plat_ptr->irq_dio3, plat_ptr);
     }
     
-    if(gpio_is_valid(sx1278_gpio_ptr->DIO4))
+    if(plat_ptr->irq_dio4)
     {
-        irq = gpio_to_irq(sx1278_gpio_ptr->DIO4);
-        free_irq(irq, sx1278_gpio_ptr);
+        free_irq(plat_ptr->irq_dio4, plat_ptr);
     }
 ERR_EXIT:
     
@@ -635,13 +621,13 @@ int lora_Reset(SX1278_Gpio_st_ptr sx1278_gpio_ptr)
     }
 
     // Set RESET pin to 0
-    gpio_direction_output(sx1278_gpio_ptr->Reset, 0);
+    gpio_direction_output(sx1278_gpio_ptr->gpio_reset, 0);
 
     // Wait 1 ms
     mdelay(1);
 
     // Configure RESET as input
-    gpio_direction_input(sx1278_gpio_ptr->Reset);
+    gpio_direction_input(sx1278_gpio_ptr->gpio_reset);
 
     // Wait 6 ms
     mdelay(6);
@@ -650,7 +636,7 @@ ERR_EXIT:
 
     return result;
 }
-
+#if 0
 static int lora_parse_dt(struct device *dev_ptr, SX1278_Gpio_st_ptr gpio_ptr)
 {
     int result = 0;
@@ -673,7 +659,7 @@ ERR_EXIT:
 
     return result;
 }
-
+#endif
 static void lora_delaywork_func(struct work_struct *w)
 {
     //int result = 0;
@@ -757,7 +743,7 @@ static void lora_work_func(struct work_struct *dw)
     uint8_t irqFlags = 0;
     lora_info_st_ptr lora_ptr = container_of(dw, lora_info_st, work);
     
-    result = SX1278_Read_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_IRQFLAGS, &irqFlags);
+    result = SX1278_Read_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_IRQFLAGS, &irqFlags);
     if(result < 0)
     {
         goto ERR_EXIT;
@@ -811,7 +797,7 @@ static void lora_work_func(struct work_struct *dw)
             if(lora_ptr->sx1278.cfg.rx_cfg.RxSingleOn == true) // Rx single mode
             {
                 uint8_t RegFifoAddrPtr = 0x00;
-                result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_FIFOADDRPTR, RegFifoAddrPtr);
+                result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_FIFOADDRPTR, RegFifoAddrPtr);
                 if(result < 0)
                 {
                     goto ERR_EXIT;
@@ -820,7 +806,7 @@ static void lora_work_func(struct work_struct *dw)
                 if(lora_ptr->sx1278.cfg.rx_cfg.ImplicitHeaderOn == true)
                 {
                     mutex_lock(&lora_ptr->buf_mutex);
-                    result = SX1278_Read_FIFO(lora_ptr->sx1278.spi_ptr, lora_ptr->rxdata.data, lora_ptr->rxdata.recv_len);
+                    result = SX1278_Read_FIFO(lora_ptr->sx1278.dev_ptr, lora_ptr->rxdata.data, lora_ptr->rxdata.recv_len);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
@@ -830,7 +816,7 @@ static void lora_work_func(struct work_struct *dw)
                 else
                 {
                     uint8_t RegNbRxBytes = 0;
-                    result = SX1278_Read_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_RXNBBYTES, &RegNbRxBytes);
+                    result = SX1278_Read_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_RXNBBYTES, &RegNbRxBytes);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
@@ -838,7 +824,7 @@ static void lora_work_func(struct work_struct *dw)
                     //spin_lock(&lora_ptr->spinlock);
                     mutex_lock(&lora_ptr->buf_mutex);
                     lora_ptr->rxdata.data_len = RegNbRxBytes;
-                    result = SX1278_Read_FIFO(lora_ptr->sx1278.spi_ptr, lora_ptr->rxdata.data, RegNbRxBytes);
+                    result = SX1278_Read_FIFO(lora_ptr->sx1278.dev_ptr, lora_ptr->rxdata.data, RegNbRxBytes);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
@@ -853,7 +839,7 @@ static void lora_work_func(struct work_struct *dw)
             else // Rx continuous mode
             {
                 uint8_t RegFifoRxCurrentAddr = 0;
-                result = SX1278_Read_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_FIFORXCURRENTADDR, &RegFifoRxCurrentAddr);
+                result = SX1278_Read_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_FIFORXCURRENTADDR, &RegFifoRxCurrentAddr);
                 if(result < 0)
                 {
                     goto ERR_EXIT;
@@ -861,14 +847,14 @@ static void lora_work_func(struct work_struct *dw)
 
                 if(lora_ptr->sx1278.cfg.rx_cfg.ImplicitHeaderOn == true)
                 {            
-                    result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_FIFOADDRPTR, RegFifoRxCurrentAddr);
+                    result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_FIFOADDRPTR, RegFifoRxCurrentAddr);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
                     }
                     //spin_lock(&lora_ptr->spinlock);
                     mutex_lock(&lora_ptr->buf_mutex);
-                    result = SX1278_Read_FIFO(lora_ptr->sx1278.spi_ptr, lora_ptr->rxdata.data, lora_ptr->rxdata.recv_len);
+                    result = SX1278_Read_FIFO(lora_ptr->sx1278.dev_ptr, lora_ptr->rxdata.data, lora_ptr->rxdata.recv_len);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
@@ -879,13 +865,13 @@ static void lora_work_func(struct work_struct *dw)
                 else
                 {
                     uint8_t RegNbRxBytes = 0;
-                    result = SX1278_Read_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_RXNBBYTES, &RegNbRxBytes);
+                    result = SX1278_Read_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_RXNBBYTES, &RegNbRxBytes);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
                     }
                     
-                    result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_FIFOADDRPTR, RegFifoRxCurrentAddr);
+                    result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_FIFOADDRPTR, RegFifoRxCurrentAddr);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
@@ -893,7 +879,7 @@ static void lora_work_func(struct work_struct *dw)
                     //spin_lock(&lora_ptr->spinlock);
                     mutex_lock(&lora_ptr->buf_mutex);
                     lora_ptr->rxdata.data_len = RegNbRxBytes;
-                    result = SX1278_Read_FIFO(lora_ptr->sx1278.spi_ptr, lora_ptr->rxdata.data, RegNbRxBytes);
+                    result = SX1278_Read_FIFO(lora_ptr->sx1278.dev_ptr, lora_ptr->rxdata.data, RegNbRxBytes);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
@@ -943,27 +929,27 @@ static void lora_work_func(struct work_struct *dw)
                 lora_ptr->txdata.doing_len = txlen;
                 
                 // Initializes the payload size
-                result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_PAYLOADLENGTH, txlen);
+                result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_PAYLOADLENGTH, txlen);
                 if(result < 0)
                 {
                     goto ERR_EXIT;
                 }
 
                 // Full buffer used for Tx
-                result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_FIFOTXBASEADDR, 0);
+                result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_FIFOTXBASEADDR, 0);
                 if(result < 0)
                 {
                     goto ERR_EXIT;
                 }
         
-                result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_FIFOADDRPTR, 0);
+                result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_FIFOADDRPTR, 0);
                 if(result < 0)
                 {
                     goto ERR_EXIT;
                 }
 
                 // Write payload buffer
-                result = SX1278_Write_FIFO(lora_ptr->sx1278.spi_ptr, (lora_ptr->txdata.data_ptr + lora_ptr->txdata.done_len), txlen);
+                result = SX1278_Write_FIFO(lora_ptr->sx1278.dev_ptr, (lora_ptr->txdata.data_ptr + lora_ptr->txdata.done_len), txlen);
                 if(result < 0)
                 {
                     goto ERR_EXIT;
@@ -971,7 +957,7 @@ static void lora_work_func(struct work_struct *dw)
 
                 if(lora_ptr->sx1278.cfg.tx_cfg.FreqHopOn == true)
                 {
-                    result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
+                    result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
                                                                    RFLR_IRQFLAGS_RXDONE |
                                                                    RFLR_IRQFLAGS_PAYLOADCRCERROR |
                                                                    RFLR_IRQFLAGS_VALIDHEADER |
@@ -984,14 +970,14 @@ static void lora_work_func(struct work_struct *dw)
                         goto ERR_EXIT;
                     }
                 
-                    result = SX1278_Read_Reg(lora_ptr->sx1278.spi_ptr, REG_DIOMAPPING1, &regval);
+                    result = SX1278_Read_Reg(lora_ptr->sx1278.dev_ptr, REG_DIOMAPPING1, &regval);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
                     }
         
                     // DIO0=TxDone, DIO2=FhssChangeChannel
-                    result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_DIOMAPPING1, (regval&RFLR_DIOMAPPING1_DIO0_MASK&RFLR_DIOMAPPING1_DIO2_MASK)|RFLR_DIOMAPPING1_DIO0_01|RFLR_DIOMAPPING1_DIO2_00);
+                    result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_DIOMAPPING1, (regval&RFLR_DIOMAPPING1_DIO0_MASK&RFLR_DIOMAPPING1_DIO2_MASK)|RFLR_DIOMAPPING1_DIO0_01|RFLR_DIOMAPPING1_DIO2_00);
                     if(result < 0)
                     {
                         goto ERR_EXIT;
@@ -999,7 +985,7 @@ static void lora_work_func(struct work_struct *dw)
                }
                else
                {
-                    result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
+                    result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
                                                                    RFLR_IRQFLAGS_RXDONE |
                                                                    RFLR_IRQFLAGS_PAYLOADCRCERROR |
                                                                    RFLR_IRQFLAGS_VALIDHEADER |
@@ -1012,14 +998,14 @@ static void lora_work_func(struct work_struct *dw)
                        goto ERR_EXIT;
                    }        
 
-                   result = SX1278_Read_Reg(lora_ptr->sx1278.spi_ptr, REG_DIOMAPPING1, &regval);
+                   result = SX1278_Read_Reg(lora_ptr->sx1278.dev_ptr, REG_DIOMAPPING1, &regval);
                    if(result < 0)
                    {
                        goto ERR_EXIT;
                    }
 
                    // DIO0=TxDone
-                   result = SX1278_Write_Reg(lora_ptr->sx1278.spi_ptr, REG_DIOMAPPING1, (regval& RFLR_DIOMAPPING1_DIO0_MASK ) | RFLR_DIOMAPPING1_DIO0_01);
+                   result = SX1278_Write_Reg(lora_ptr->sx1278.dev_ptr, REG_DIOMAPPING1, (regval& RFLR_DIOMAPPING1_DIO0_MASK ) | RFLR_DIOMAPPING1_DIO0_01);
                    if(result < 0)
                    {
                        goto ERR_EXIT;
@@ -1141,21 +1127,21 @@ static int drv_open(struct inode *inode, struct file *filp)
         goto ERR_EXIT;
     }
     
-    result = lora_IoInit(&lora_ptr->gpio);
+    result = lora_IoInit(&lora_ptr->plat_data.gpio);
     if (result < 0) 
     {
         printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT1;
     }
     
-    result = lora_Reset(&lora_ptr->gpio);
+    result = lora_Reset(&lora_ptr->plat_data.gpio);
     if (result < 0) 
     {
         printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
         goto ERR_EXIT3;
     }
    
-    debug(lora_ptr->sx1278.spi_ptr, __LINE__, 1);   
+    //debug(lora_ptr->sx1278.spi_ptr, __LINE__, 1);   
 
     result = SX1278RxChainCalibration(&lora_ptr->sx1278);
     if(result < 0)
@@ -1164,7 +1150,7 @@ static int drv_open(struct inode *inode, struct file *filp)
         goto ERR_EXIT;
     }
 
-    debug(lora_ptr->sx1278.spi_ptr, __LINE__, 1);   
+    //debug(lora_ptr->sx1278.spi_ptr, __LINE__, 1);   
     result = SX1278SetOpMode(&lora_ptr->sx1278, RF_OPMODE_SLEEP);
     if(result < 0)
     {
@@ -1172,8 +1158,8 @@ static int drv_open(struct inode *inode, struct file *filp)
         goto ERR_EXIT;
     }
 
-    debug(lora_ptr->sx1278.spi_ptr, __LINE__, 1);   
-    result = lora_IoIrqInit(&lora_ptr->gpio);
+    //debug(lora_ptr->sx1278.spi_ptr, __LINE__, 1);   
+    result = lora_IoIrqInit(&lora_ptr->plat_data);
     if (result < 0) 
     {
         printk(KERN_ERR "%s %d\n", __FUNCTION__, __LINE__);
@@ -1258,9 +1244,9 @@ static int drv_open(struct inode *inode, struct file *filp)
 
     return result;
 ERR_EXIT3:
-    lora_IoIrqDeInit(&lora_ptr->gpio); 
+    lora_IoIrqDeInit(&lora_ptr->plat_data); 
 ERR_EXIT2:
-    lora_IoDeInit(&lora_ptr->gpio);
+    lora_IoDeInit(&lora_ptr->plat_data.gpio);
 ERR_EXIT1:
 ERR_EXIT:    
     atomic_inc(&lora_ptr->opened);
@@ -1340,14 +1326,14 @@ static ssize_t drv_write(struct file *filp, const char __user *buffer_ptr, size_
     lora_ptr = filp->private_data;
     //consider rx irq interrupt
     //spin_lock_irq(&lora_ptr->spinlock);
-    disable_irq_nosync(gpio_to_irq(lora_ptr->gpio.DIO0));
+    disable_irq_nosync(gpio_to_irq(lora_ptr->plat_data.irq_dio0));
     mutex_lock(&lora_ptr->mutex);
     lora_ptr->txdata.data_ptr = kzalloc(buffer_len, GFP_KERNEL);
     if(NULL == lora_ptr->txdata.data_ptr)
     {
         result = -ENOMEM;
         //spin_unlock_irq(&lora_ptr->spinlock);
-        enable_irq(gpio_to_irq(lora_ptr->gpio.DIO0));
+        enable_irq(gpio_to_irq(lora_ptr->plat_data.irq_dio0));
         goto ERR_EXIT;
     }
     lora_ptr->txdata.data_len = buffer_len;
@@ -1363,7 +1349,7 @@ static ssize_t drv_write(struct file *filp, const char __user *buffer_ptr, size_
             goto ERR_EXIT;
         }
         
-        enable_irq(gpio_to_irq(lora_ptr->gpio.DIO0));
+        enable_irq(gpio_to_irq(lora_ptr->plat_data.irq_dio0));
         //spin_unlock_irq(&lora_ptr->spinlock);
 
         txlen = (buffer_len > FIFO_BUFFER_SIZE) ? FIFO_BUFFER_SIZE : buffer_len;
@@ -1435,7 +1421,7 @@ static ssize_t drv_write(struct file *filp, const char __user *buffer_ptr, size_
         lora_ptr->statu = RF_ERROR;
          
     }else{
-        enable_irq(gpio_to_irq(lora_ptr->gpio.DIO0));
+        enable_irq(gpio_to_irq(lora_ptr->plat_data.irq_dio0));
         result = -EIO;
         //spin_unlock_irq(&lora_ptr->spinlock);
         goto ERR_EXIT;
@@ -1723,8 +1709,8 @@ static int drv_release(struct inode *inode, struct file *filp)
     mutex_lock(&device_list_lock);
 
     cancel_delayed_work(&lora_ptr->delaywork);
-    lora_IoIrqDeInit(&lora_ptr->gpio); 
-    lora_IoDeInit(&lora_ptr->gpio);
+    lora_IoIrqDeInit(&lora_ptr->plat_data); 
+    lora_IoDeInit(&lora_ptr->plat_data.gpio);
 
     filp->private_data = NULL;
 
@@ -1758,6 +1744,122 @@ static const struct file_operations drv_fops = {
  * /dev/spidevB.C character device nodes exposing our userspace API.
  * It also simplifies memory management.
  */
+/* XXX: caller must hold cdata->lock */
+static int lora_spi_read(struct device *dev_ptr, u8 addr, int len, u8 *data)
+{
+    int err;
+    struct spi_message msg;
+    struct spi_device *spi = to_spi_device(dev_ptr);
+    lora_info_st *lora_ptr = dev_get_drvdata(dev_ptr);
+
+    struct spi_transfer xfers[] = {
+        {
+            .tx_buf = lora_ptr->tb.tx_buf,
+            .bits_per_word = 8,
+            .len = 1,
+        },
+        {
+            .rx_buf = lora_ptr->tb.rx_buf,
+            .bits_per_word = 8,
+            .len = len,
+        }
+    };
+
+    lora_ptr->tb.tx_buf[0] = addr | 0x80;
+
+    spi_message_init(&msg);
+    spi_message_add_tail(&xfers[0], &msg);
+    spi_message_add_tail(&xfers[1], &msg);
+
+    err = spi_sync(spi, &msg);
+    if (err)
+        return err;
+
+    memcpy(data, lora_ptr->tb.rx_buf, len * sizeof(u8));
+
+    return len;
+}
+
+/* XXX: caller must hold cdata->lock */
+static int lora_spi_write(struct device *dev_ptr, u8 addr, int len, u8 *data)
+{
+    struct spi_message msg;
+    struct spi_device *spi = to_spi_device(dev_ptr);
+    lora_info_st *lora_ptr = dev_get_drvdata(dev_ptr);
+
+    struct spi_transfer xfers = {
+        .tx_buf = lora_ptr->tb.tx_buf,
+        .bits_per_word = 8,
+        .len = len + 1,
+    };
+
+    if (len >= SX1278_TX_MAX_LENGTH)
+        return -ENOMEM;
+
+    lora_ptr->tb.tx_buf[0] = addr;
+
+    memcpy(&lora_ptr->tb.tx_buf[1], data, len);
+
+    spi_message_init(&msg);
+    spi_message_add_tail(&xfers, &msg);
+    return spi_sync(spi, &msg);
+}
+
+static const struct lora_transfer_function lora_spi_tf = {
+    .write = lora_spi_write,
+    .read = lora_spi_read,
+};
+
+
+static int lora_parse_dt(struct device *dev_ptr,struct sx1278_platform_data *platdata_ptr)
+{
+    int result = 0;
+    struct device_node *node_ptr = dev_ptr->of_node;
+
+    if ((NULL == node_ptr) || (NULL == platdata_ptr))
+    {
+        result = -ENOMEM;
+        goto ERR_EXIT;
+    }
+    
+    platdata_ptr->gpio.gpio_dio0 = of_get_named_gpio(node_ptr, "dio0-gpios", 0);
+    platdata_ptr->gpio.gpio_dio1 = of_get_named_gpio(node_ptr, "dio1-gpios", 0);
+    platdata_ptr->gpio.gpio_dio2 = of_get_named_gpio(node_ptr, "dio2-gpios", 0);
+    platdata_ptr->gpio.gpio_dio3 = of_get_named_gpio(node_ptr, "dio3-gpios", 0);
+    platdata_ptr->gpio.gpio_dio4 = of_get_named_gpio(node_ptr, "dio4-gpios", 0);
+    platdata_ptr->gpio.gpio_reset= of_get_named_gpio(node_ptr, "reset-gpios", 0);
+
+    if(gpio_is_valid(platdata_ptr->gpio.gpio_dio0))
+    {
+        platdata_ptr->irq_dio0 = gpio_to_irq(platdata_ptr->gpio.gpio_dio0);
+    }
+
+    if(gpio_is_valid(platdata_ptr->gpio.gpio_dio1))
+    {
+        platdata_ptr->irq_dio1 = gpio_to_irq(platdata_ptr->gpio.gpio_dio1);
+    }
+
+    if(gpio_is_valid(platdata_ptr->gpio.gpio_dio2))
+    {
+        platdata_ptr->irq_dio2 = gpio_to_irq(platdata_ptr->gpio.gpio_dio2);
+    }
+
+    if(gpio_is_valid(platdata_ptr->gpio.gpio_dio3))
+    {
+        platdata_ptr->irq_dio3 = gpio_to_irq(platdata_ptr->gpio.gpio_dio3);
+    }
+
+    if(gpio_is_valid(platdata_ptr->gpio.gpio_dio4))
+    {
+        platdata_ptr->irq_dio4 = gpio_to_irq(platdata_ptr->gpio.gpio_dio4);
+    }
+
+    
+ERR_EXIT:
+
+    return result;
+}
+
 
 /*-------------------------------------------------------------------------*/
 static int drv_probe(struct spi_device *spi_ptr)
@@ -1771,7 +1873,7 @@ static int drv_probe(struct spi_device *spi_ptr)
     if(!lora_ptr)
         return -ENOMEM;
 
-    result = lora_parse_dt(&spi_ptr->dev, &lora_ptr->gpio);
+    result = lora_parse_dt(&spi_ptr->dev, &lora_ptr->plat_data);
     if (result < 0)
     {
         goto ERR_EXIT;
@@ -1798,6 +1900,10 @@ static int drv_probe(struct spi_device *spi_ptr)
         {
             set_bit(minor, minors);
             list_add(&lora_ptr->device_entry, &device_list);
+
+            lora_ptr->drv_name = spi_ptr->modalias;
+        	lora_ptr->bus_type = 0x1C;
+        	lora_ptr->tf = &lora_spi_tf;
             //Init the open count
             atomic_set(&lora_ptr->opened, 1);
             //初始化等待队列
@@ -1825,7 +1931,7 @@ static int drv_probe(struct spi_device *spi_ptr)
         spi_ptr->mode = SPI_MODE_0;
         spi_setup(spi_ptr);    
 
-        lora_ptr->sx1278.spi_ptr = spi_ptr;
+        lora_ptr->sx1278.dev_ptr = &spi_ptr->dev;
     }else{
         goto ERR_EXIT;
     }
