@@ -92,177 +92,6 @@ const RadioRegisters_t RadioRegsInit[] = RADIO_INIT_REGISTERS_VALUE;
 #define SX127X_CLASSNAME	"sx127x"
 #define SX127X_DEVICENAME	"sx127x%d"
 
-#define SX127X_LORAREG_MASK BIT(8)
-#define SX127X_LORAREG(addr) (addr | SX127X_LORAREG_MASK)
-#define SX127X_FSKOOKREG_MASK BIT(9)
-#define SX127X_FSKOOKREG(addr) (addr | SX127X_FSKOOK_MASK)
-
-#define SX127X_REGADDR(reg) (reg & 0x7f)
-#define SX127X_WRITEADDR(addr) (addr | (1 << 7))
-
-#define SX127X_REG_FIFO													0x00
-
-#define SX127X_REG_OPMODE												0x01
-#define SX127X_REG_OPMODE_LONGRANGEMODE									BIT(7)
-#define SX127X_REG_OPMODE_FSKOOK_MODULATIONTYPE							(BIT(6) | BIT(5))
-#define SX127X_REG_OPMODE_FSKOOK_MODULATIONTYPE_FSK						0
-#define SX127X_REG_OPMODE_FSKOOK_MODULATIONTYPE_OOK						BIT(5)
-#define SX127X_REG_OPMODE_LOWFREQUENCYMODEON							BIT(3)
-#define SX127X_REG_OPMODE_MODE											(BIT(2) | BIT(1) | BIT(0))
-#define SX127X_REG_OPMODE_MODE_SLEEPMODE								0
-#define SX127X_REG_OPMODE_MODE_STDBYMODE								BIT(0)
-
-#define SX127X_REG_FSKOOK_BITRATEMSB									SX127X_FSKOOKREG(0x02)
-#define SX127X_REG_FSKOOK_BITRATELSB									SX127X_FSKOOKREG(0x03)
-#define SX127X_REG_FSKOOK_FDEVMSB										SX127X_FSKOOKREG(0x04)
-#define SX127X_REG_FSKOOK_FDEVLSB										SX127X_FSKOOKREG(0x05)
-#define SX127X_REG_FRFMSB												0x06
-#define SX127X_REG_FRFMLD												0x07
-#define SX127X_REG_FRFLSB												0x08
-
-#define SX127X_REG_PACONFIG												0x09
-#define SX127X_REG_PACONFIG_PASELECT									BIT(7)
-#define SX127X_REG_PACONFIG_MAXPOWER									(BIT(6) | BIT(5) | BIT(4))
-#define SX127X_REG_PACONFIG_MAXPOWER_SHIFT								4
-#define SX127X_REG_PACONFIG_OUTPUTPOWER									(BIT(3) | BIT(2) | BIT(1) | BIT(0))
-
-#define SX127X_REG_PARAMP												0x0a
-#define SX127X_REG_OCP													0x0b
-#define SX127X_REG_LNA													0x0c
-#define SX127X_REG_FSKOOK_RXCONFIG										SX127X_FSKOOKREG(0x0d)
-#define SX127X_REG_LORA_FIFOADDRPTR										SX127X_LORAREG(0x0d)
-#define SX127X_REG_FSKOOK_RSSICONFIG									SX127X_FSKOOKREG(0x0e)
-#define SX127X_REG_LORA_FIFOTXBASEADDR									SX127X_LORAREG(0x0e)
-#define SX127X_REG_FSKOOK_RSSICOLLISION									SX127X_FSKOOKREG(0x0f)
-#define SX127X_REG_LORA_RXBASEADDR										SX127X_LORAREG(0x0f)
-#define SX127X_REG_FSKOOK_RSSTHRESH										SX127X_FSKOOKREG(0x10)
-#define SX127X_REG_LORA_RXCURRENTADDR									SX127X_LORAREG(0x10)
-#define SX127X_REG_FSKOOK_RSSIVALUE										SX127X_FSKOOKREG(0x11)
-#define SX127X_REG_LORA_IRQMASKFLAGS									SX127X_LORAREG(0x11)
-#define SX127X_REG_FSKOOK_RXBW											SX127X_FSKOOKREG(0x12)
-
-#define SX127X_REG_LORA_IRQFLAGS										SX127X_LORAREG(0x12)
-#define SX127X_REG_LORA_IRQFLAGS_RXTIMEOUT								BIT(7)
-#define SX127X_REG_LORA_IRQFLAGS_RXDONE									BIT(6)
-#define SX127X_REG_LORA_IRQFLAGS_PAYLOADCRCERROR						BIT(5)
-#define SX127X_REG_LORA_IRQFLAGS_TXDONE									BIT(3)
-#define SX127X_REG_LORA_IRQFLAGS_CADDONE								BIT(2)
-#define SX127X_REG_LORA_IRQFLAGS_CADDETECTED							BIT(0)
-
-#define SX127X_REG_FSKOOK_AFCBW											SX127X_FSKOOKREG(0x13)
-#define SX127X_REG_LORA_RXNBBYTES										SX127X_LORAREG(0x13)
-#define SX127X_REG_FSKOOK_OOKPEAK										SX127X_FSKOOKREG(0x14)
-#define SX127X_REG_LORA_RXHEADERCNTVALUEMSB								SX127X_LORAREG(0x14)
-#define SX127X_REG_FSKOOK_OOKFIX										SX127X_FSKOOKREG(0x15)
-#define SX127X_REG_LORA_RXHEADERCNTVALUELSB								SX127X_LORAREG(0x15)
-#define SX127X_REG_FSKOOK_OOKAVG										SX127X_FSKOOKREG(0x16)
-#define SX127X_REG_LORA_RXPACKETCNTVALUEMSB								SX127X_LORAREG(0x16)
-#define SX127X_REG_LORA_RXPACKETCNTVALUELSB								SX127X_LORAREG(0x17)
-#define SX127X_REG_LORA_MODEMSTAT										SX127X_LORAREG(0x18)
-#define SX127X_REG_LORA_PKTSNRVALUE										SX127X_LORAREG(0x19)
-#define SX127X_REG_FSKOOK_AFCFEI										SX127X_FSKOOKREG(0x1a)
-#define SX127X_REG_LORA_PKTRSSIVALUE									SX127X_LORAREG(0x1a)
-#define SX127X_REG_FSKOOK_AFCMSB										SX127X_FSKOOKREG(0x1b)
-#define SX127X_REG_LORA_RSSIVALUE										SX127X_LORAREG(0x1b)
-#define SX127X_REG_FSKOOK_AFCLSB										SX127X_FSKOOKREG(0x1c)
-#define SX127X_REG_LORA_HOPCHANNEL										SX127X_LORAREG(0x1c)
-#define SX127X_REG_FSKOOK_FEIMSB										SX127X_FSKOOKREG(0x1d)
-
-#define SX127X_REG_LORA_MODEMCONFIG1									SX127X_LORAREG(0x1d)
-#define SX127X_REG_LORA_MODEMCONFIG1_BW									(BIT(7) | BIT(6) | BIT(5) | BIT(4))
-#define SX127X_REG_LORA_MODEMCONFIG1_BW_SHIFT							4
-#define SX127X_REG_LORA_MODEMCONFIG1_BW_MAX								9
-#define SX127X_REG_LORA_MODEMCONFIG1_CODINGRATE							(BIT(3) | BIT(2) | BIT(1))
-#define SX127X_REG_LORA_MODEMCONFIG1_CODINGRATE_SHIFT					1
-#define SX127X_REG_LORA_MODEMCONFIG1_CODINGRATE_MIN						1
-#define SX127X_REG_LORA_MODEMCONFIG1_CODINGRATE_MAX						6
-#define SX127X_REG_LORA_MODEMCONFIG1_IMPLICITHEADERMODEON				BIT(0)
-
-#define SX127X_REG_FSKOOK_FEILSB										SX127X_FSKOOKREG(0x1e)
-
-#define SX127X_REG_LORA_MODEMCONFIG2									SX127X_LORAREG(0x1e)
-#define SX127X_REG_LORA_MODEMCONFIG2_SPREADINGFACTOR					(BIT(7) | BIT(6) | BIT(5) | BIT(4))
-#define SX127X_REG_LORA_MODEMCONFIG2_SPREADINGFACTOR_SHIFT				4
-#define SX127X_REG_LORA_MODEMCONFIG2_RXPAYLOADCRCON						BIT(2)
-
-#define SX127X_REG_FSKOOK_PREAMBLEDETECT								SX127X_FSKOOKREG(0x1f)
-#define SX127X_REG_LORA_SYMBTIMEOUTLSB									SX127X_LORAREG(0x1f)
-#define SX127X_REG_FSKOOK_RXTIMEOUT1									SX127X_FSKOOKREG(0x20)
-#define SX127X_REG_LORA_PREAMBLEMSB										SX127X_LORAREG(0x20)
-#define SX127X_REG_FSKOOK_RXTIMEOUT2									SX127X_FSKOOKREG(0x21)
-#define SX127X_REG_LORA_PREAMBLELSB										SX127X_LORAREG(0x21)
-#define SX127X_REG_FSKOOK_RXTIMEOUT3									SX127X_FSKOOKREG(0x22)
-#define SX127X_REG_LORA_PAYLOADLENGTH									SX127X_LORAREG(0x22)
-#define SX127X_REG_FSKOOK_RXDELAY										SX127X_FSKOOKREG(0x23)
-#define SX127X_REG_LORA_MAXPAYLOADLENGTH								SX127X_LORAREG(0x23)
-#define SX127X_REG_FSKOOK_OSC											SX127X_FSKOOKREG(0x24)
-#define SX127X_REG_LORA_HOPPERIOD										SX127X_LORAREG(0x24)
-#define SX127X_REG_FSKOOK_PREAMBLEMSB									SX127X_FSKOOKREG(0x25)
-#define SX127X_REG_LORA_FIFORXBYTEADDR									SX127X_LORAREG(0x25)
-#define SX127X_REG_FSKOOK_PREAMBLELSB									SX127X_FSKOOKREG(0x26)
-
-#define SX127X_REG_LORA_MODEMCONFIG3									SX127X_LORAREG(0x26)
-#define SX127X_REG_LORA_MODEMCONFIG3_LOWDATARATEOPTIMIZE				BIT(3)
-
-#define SX127X_REG_FSKOOK_SYNCCONFIG									SX127X_FSKOOKREG(0x27)
-#define SX127X_REG_FSKOOK_SYNCVALUE1									SX127X_FSKOOKREG(0x28)
-#define SX127X_REG_LORA_FEIMSB											SX127X_LORAREG(0x28)
-#define SX127X_REG_FSKOOK_SYNCVALUE2									SX127X_FSKOOKREG(0x29)
-#define SX127X_REG_LORA_FEIMID											SX127X_LORAREG(0x29)
-#define SX127X_REG_FSKOOK_SYNCVALUE3									SX127X_FSKOOKREG(0x2a)
-#define SX127X_REG_LORA_FEILSB											SX127X_LORAREG(0x29)
-#define SX127X_REG_FSKOOK_SYNCVALUE4									SX127X_FSKOOKREG(0x2b)
-#define SX127X_REG_FSKOOK_SYNCVALUE5									SX127X_FSKOOKREG(0x2c)
-#define SX127X_REG_LORA_RSSIWIDEBAND									SX127X_LORAREG(0x2c)
-#define SX127X_REG_FSKOOK_SYNCVALUE6									SX127X_FSKOOKREG(0x2d)
-#define SX127X_REG_FSKOOK_SYNCVALUE7									SX127X_FSKOOKREG(0x2e)
-#define SX127X_REG_FSKOOK_SYNCVALUE8									SX127X_FSKOOKREG(0x2f)
-#define SX127X_REG_FSKOOK_PACKETCONFIG1									SX127X_FSKOOKREG(0x30)
-#define SX127X_REG_FSKOOK_PACKETCONFIG2									SX127X_FSKOOKREG(0x31)
-
-#define SX127X_REG_LORA_DETECTOPTIMIZATION								SX127X_LORAREG(0x31)
-#define SX127X_REG_LORA_DETECTOPTIMIZATION_DETECTIONOPTIMIZE			(BIT(2) | BIT(1) | BIT(0))
-#define SX127X_REG_LORA_DETECTOPTIMIZATION_DETECTIONOPTIMIZE_SF7SF12	0x03
-#define SX127X_REG_LORA_DETECTOPTIMIZATION_DETECTIONOPTIMIZE_SF6		0x05
-
-#define SX127X_REG_FSKOOK_PAYLOADLENGTH									SX127X_FSKOOKREG(0x32)
-#define SX127X_REG_FSKOOK_NODEADRS										SX127X_FSKOOKREG(0x33)
-#define SX127X_REG_LORA_INVERTIQ										SX127X_LORAREG(0x33)
-#define SX127X_REG_LORA_INVERTIQ_INVERTIQ								BIT(6)
-
-#define SX127X_REG_FSKOOK_BROADCASTADRS									SX127X_FSKOOKREG(0x34)
-#define SX127X_REG_FSKOOK_FIFOTHRESH									SX127X_FSKOOKREG(0x35)
-#define SX127X_REG_FSKOOK_SEQCONFIG1									SX127X_FSKOOKREG(0x36)
-#define SX127X_REG_FSKOOK_SEQCONFIG2									SX127X_FSKOOKREG(0x37)
-#define SX127X_REG_LORA_DETECTIONTHRESHOLD								SX127X_LORAREG(0x37)
-#define SX127X_REG_FSKOOK_TIMERRESOL									SX127X_FSKOOKREG(0x38)
-#define SX127X_REG_FSKOOK_TIMER1COEF									SX127X_FSKOOKREG(0x39)
-#define SX127X_REG_LORA_SYNCWORD										SX127X_LORAREG(0x39)
-#define SX127X_REG_FSKOOK_TIMER2COEF									SX127X_FSKOOKREG(0x3a)
-#define SX127X_REG_FSKOOK_IMAGECAL										SX127X_FSKOOKREG(0x3b)
-#define SX127X_REG_FSKOOK_TEMP											SX127X_FSKOOKREG(0x3c)
-#define SX127X_REG_FSKOOK_LOWBAT										SX127X_FSKOOKREG(0x3d)
-#define SX127X_REG_FSKOOK_IRQFLAGS1										SX127X_FSKOOKREG(0x3e)
-#define SX127X_REG_FSKOOK_IRQFLAGS2										SX127X_FSKOOKREG(0x3f)
-
-#define SX127X_REG_DIOMAPPING1											0x40
-#define SX127X_REG_DIOMAPPING1_DIO0										(BIT(7) | BIT(6))
-#define SX127X_REG_DIOMAPPING1_DIO0_RXDONE								0
-#define SX127X_REG_DIOMAPPING1_DIO0_TXDONE								(BIT(6))
-#define SX127X_REG_DIOMAPPING1_DIO0_CADDONE								(BIT(7))
-
-#define SX127X_REG_DIOMAPPING2											0x41
-#define SX127X_REG_VERSION												0x42
-#define SX127X_REG_FSKOOK_PLLHOP										SX127X_FSKOOKREG(0x44)
-#define SX127X_REG_TCXO													0x4b
-#define SX127X_REG_PADAC												0x4d
-#define SX127X_REG_FORMERTEMP											0x5b
-#define SX127X_REG_FSKOOK_BITRATEFRAC									SX127X_FSKOOKREG(0x5d)
-#define SX127X_REG_AGCREF												0x61
-#define SX127X_REG_AGCTHRESH1											0x62
-#define SX127X_REG_AGCTHRESH2											0x63
-#define SX127X_REG_AGCTHRESH3											0x64
-#define SX127X_REG_PLL													0x70
 
 static int devmajor;
 static struct class *devclass;
@@ -272,7 +101,7 @@ static struct class *drv_class;
 
 
 static const char* invalid = "invalid";
-static const char* modstr[] = {"fsk", "ook", "lora"};
+static const char* modstr[] = {"fsk", "lora"};
 static const char* opmodestr[] = {"sleep", "standby", "fstx", "tx", "fsrx", "rx", "rxcontinuous", "rxsingle", "cad"};
 static unsigned bwmap[] = { 7800, 10400, 15600, 20800, 31250, 41700, 62500, 125000, 250000, 500000 };
 static const char* paoutput[] = {"rfo", "pa_boost"};
@@ -299,46 +128,45 @@ static irqreturn_t sx127x_dio0_bottem_irq_thread(int irq, void *dev_id)
 	mutex_lock(&data->mutex);
 	sx127x_reg_read(data->spidevice, SX127X_REG_LORA_IRQFLAGS, &irqflags);
 	if(irqflags & SX127X_REG_LORA_IRQFLAGS_RXDONE){
+        u32 freq = data->cfg.LoRa.rChannel;
 		dev_warn(data->chardevice, "reading packet\n");
 		memset(&pkt, 0, sizeof(pkt));
 
 		sx127x_fifo_readpkt(data->spidevice, buf, &len);
 		sx127x_reg_read(data->spidevice, SX127X_REG_LORA_PKTSNRVALUE, &snr);
-        if( SX1276.Settings.LoRaPacketHandler.SnrValue & 0x80 ) // The SNR sign bit is 1
+        if(snr & 0x80 ) // The SNR sign bit is 1
         {
             // Invert and divide by 4
-            snr = ( ( ~SX1276.Settings.LoRaPacketHandler.SnrValue + 1 ) & 0xFF ) >> 2;
+            snr = ( ( ~snr + 1 ) & 0xFF ) >> 2;
             snr = -snr;
         }
         else
         {
             // Divide by 4
-            snr = ( SX1276.Settings.LoRaPacketHandler.SnrValue & 0xFF ) >> 2;
+            snr = ( snr & 0xFF ) >> 2;
         }
 		sx127x_reg_read(data->spidevice, SX127X_REG_LORA_PKTRSSIVALUE, &rssi);
 		sx127x_reg_read24(data->spidevice, SX127X_REG_LORA_FEIMSB, &fei);
-		if( snr < 0 )
+		if(snr < 0)
         {
-            if( SX1276.Settings.Channel > RF_MID_BAND_THRESH )
+            if(freq > RF_MID_BAND_THRESH)
             {
-                SX1276.Settings.LoRaPacketHandler.RssiValue = RSSI_OFFSET_HF + rssi + ( rssi >> 4 ) +
-                                                              snr;
+                rssi = RSSI_OFFSET_HF + rssi + (rssi >> 4) + snr;
             }
             else
             {
-                SX1276.Settings.LoRaPacketHandler.RssiValue = RSSI_OFFSET_LF + rssi + ( rssi >> 4 ) +
-                                                              snr;
+                rssi = RSSI_OFFSET_LF + rssi + (rssi >> 4) + snr;
             }
         }
         else
         {
-            if( SX1276.Settings.Channel > RF_MID_BAND_THRESH )
+            if(freq > RF_MID_BAND_THRESH)
             {
-                SX1276.Settings.LoRaPacketHandler.RssiValue = RSSI_OFFSET_HF + rssi + ( rssi >> 4 );
+                rssi = RSSI_OFFSET_HF + rssi + (rssi >> 4);
             }
             else
             {
-                SX1276.Settings.LoRaPacketHandler.RssiValue = RSSI_OFFSET_LF + rssi + ( rssi >> 4 );
+                rssi = RSSI_OFFSET_LF + rssi + (rssi >> 4);
             }
         }
 		pkt.hdrlen = sizeof(pkt);
@@ -920,6 +748,20 @@ static int sx127x_set_freq(struct sx127x *sx127x_ptr, u32 freq)
 	return ret;
 }
 
+static int sx127x_get_opmode(struct sx127x *sx127x_ptr, u8 *opMode)
+{
+	int ret = 0;
+	u8 reg = 0;
+	struct spi_device *spi = to_spi_device(sx127x_ptr->dev);
+
+	sx127x_reg_read(spi, REG_OPMODE, &reg);
+	
+    *opMode = reg | RF_OPMODE_MASK;
+
+	return ret;
+}
+
+
 static int sx127x_set_opmode(struct sx127x *sx127x_ptr, u8 opMode)
 {
 	int ret = 0;
@@ -960,6 +802,27 @@ static int sx127x_set_stby(struct sx127x *sx127x_ptr)
 
 	return ret;
 }
+
+static int sx127x_get_modem(struct sx127x *sx127x_ptr, RadioModems_t *modem)
+{
+	u8 reg = 0;
+	int ret = 0;
+	RadioModems_t curmodem;
+	struct spi_device *spi = to_spi_device(sx127x_ptr->dev);
+
+	ret = sx127x_reg_read(spi, REG_OPMODE, &reg);
+    if((reg&RFLR_OPMODE_LONGRANGEMODE_ON) != 0)
+    {
+        *modem = MODEM_LORA;
+    }
+    else
+    {
+        *modem = MODEM_FSK;
+    }
+
+	return ret;
+}
+
 
 static int sx127x_set_modem(struct sx127x *sx127x_ptr, RadioModems_t modem)
 {
@@ -1272,7 +1135,7 @@ int sx127x_init(struct sx127x *sx127x_ptr)
         sx127x_reg_write(RadioRegsInit[i].Addr, RadioRegsInit[i].Value);
     }
 
-    sx127x_set_modem(sx127x_ptr, MODEM_FSK);
+    sx127x_set_modem(sx127x_ptr, MODEM_LORA);
 
     sx127x_ptr.cfg.State = RF_IDLE;
 
@@ -1282,504 +1145,429 @@ error:
 }
 
 
-
-void sx127x_set_rxconfig(struct sx127x *sx127x_ptr)
+static int sx127x_set_rxconfig(struct sx127x *sx127x_ptr, u32 freq, u32 bandwidth, u32 datarate, u32 coderate, u16 preambleLen)
 {
 	int ret = 0;
 	u8 reg = 0;
+
+    bool crcOn = true;
+    bool fixLen = false;
+    bool iqInverted = false;
+    bool rxContinuou = true;
+    bool freqHopOn = false;
+    u16 symbTimeout = 5;
+    u8 payloadLen = 0;
+    u8 hopPeriod = 0;
+    u8 LowDatarateOptimize = 0;
+    
 	struct spi_device *spi = to_spi_device(sx127x_ptr->dev);
-	RadioModems_t modem = sx127x_ptr->cfg.Modem;
-	u32 freq = sx127x_ptr->cfg.LoRa.rChannel;
+
+	ret = sx127x_set_freq(sx127x_ptr, freq);
+    if(ret < 0)
+    {
+        goto error;
+    }
+    
 	
-    sx127x_set_modem(sx127x_ptr, modem);
-
-	sx127x_set_freq(sx127x_ptr, freq);
-
-    switch(modem)
+    if( ( ( bandwidth == 7 ) && ( ( datarate == 11 ) || ( datarate == 12 ) ) ) ||
+        ( ( bandwidth == 8 ) && ( datarate == 12 ) ) )
     {
-    case MODEM_FSK:
-        break;
-    case MODEM_LORA:
-        {
-			bool fixLen = 0;
-			u16 payloadLen = 0;
-			u32 bandwidth = sx127x_ptr->cfg.LoRa.rBandwidth;
-			u32 datarate = sx127x_ptr->cfg.LoRa.rDatarate;
-			u8 coderate = sx127x_ptr->cfg.LoRa.rCoderate;
-			u8 HopPeriod = sx127x_ptr->cfg.LoRa.HopPeriod;
-			u8 symbTimeout = 5;
-			u16 preambleLen = sx127x_ptr->cfg.LoRa.PreambleLen;
-			bool crcOn = sx127x_ptr->cfg.LoRa.CrcOn;
-			u8 LowDatarateOptimize = 0;
-			
-            if( ( ( bandwidth == 7 ) && ( ( datarate == 11 ) || ( datarate == 12 ) ) ) ||
-                ( ( bandwidth == 8 ) && ( datarate == 12 ) ) )
-            {
-                LowDatarateOptimize = 0x01;
-            }
-            else
-            {
-                LowDatarateOptimize = 0x00;
-            }
-
-
-			sx127x_reg_read(spi, REG_LR_MODEMCONFIG1, &reg);
-            sx127x_reg_write(spi, REG_LR_MODEMCONFIG1,
-                         ( reg &
-                           RFLR_MODEMCONFIG1_BW_MASK &
-                           RFLR_MODEMCONFIG1_CODINGRATE_MASK &
-                           RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK ) |
-                           ( bandwidth << 4 ) | ( coderate << 1 ) |
-                           fixLen );
-
-			sx127x_reg_read(spi, REG_LR_MODEMCONFIG2, &reg);
-            sx127x_reg_write(spi, REG_LR_MODEMCONFIG2,
-                         ( reg &
-                           RFLR_MODEMCONFIG2_SF_MASK &
-                           RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK &
-                           RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK ) |
-                           ( datarate << 4 ) | ( crcOn << 2 ) |
-                           ( ( symbTimeout >> 8 ) & ~RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK ) );
-
-			sx127x_reg_read(spi, REG_LR_MODEMCONFIG3, reg);
-            sx127x_reg_write(spi, REG_LR_MODEMCONFIG3,
-                         ( reg &
-                           RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK ) |
-                           ( LowDatarateOptimize << 3 ) );
-
-            sx127x_reg_write(spi, REG_LR_SYMBTIMEOUTLSB, ( u8 )( symbTimeout & 0xFF ) );
-
-            sx127x_reg_write(spi, REG_LR_PREAMBLEMSB, ( u8 )( ( preambleLen >> 8 ) & 0xFF ) );
-            sx127x_reg_write(spi, REG_LR_PREAMBLELSB, ( u8 )( preambleLen & 0xFF ) );
-
-            if( fixLen == 1 )
-            {
-                sx127x_reg_write(spi, REG_LR_PAYLOADLENGTH, payloadLen );
-            }
-
-            if( SX1276.Settings.LoRa.FreqHopOn == true )
-            {
-            	sx127x_reg_read(spi, REG_LR_PLLHOP, &reg);
-                sx127x_reg_write(spi, REG_LR_PLLHOP, ( reg & RFLR_PLLHOP_FASTHOP_MASK ) | RFLR_PLLHOP_FASTHOP_ON );
-                sx127x_reg_write(spi, REG_LR_HOPPERIOD, HopPeriod );
-            }
-
-            if( ( bandwidth == 9 ) && ( SX1276.Settings.Channel > RF_MID_BAND_THRESH ) )
-            {
-                // ERRATA 2.1 - Sensitivity Optimization with a 500 kHz Bandwidth
-                sx127x_reg_write(spi, REG_LR_TEST36, 0x02);
-                sx127x_reg_write(spi, REG_LR_TEST3A, 0x64);
-            }
-            else if( bandwidth == 9 )
-            {
-                // ERRATA 2.1 - Sensitivity Optimization with a 500 kHz Bandwidth
-                sx127x_reg_write(spi, REG_LR_TEST36, 0x02);
-                sx127x_reg_write(spi, REG_LR_TEST3A, 0x7F);
-            }
-            else
-            {
-                // ERRATA 2.1 - Sensitivity Optimization with a 500 kHz Bandwidth
-                sx127x_reg_write(spi, REG_LR_TEST36, 0x03);
-            }
-
-            if( datarate == 6 )
-            {
-            	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
-                sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE,
-                             (reg  &
-                               RFLR_DETECTIONOPTIMIZE_MASK ) |
-                               RFLR_DETECTIONOPTIMIZE_SF6 );
-                sx127x_reg_write(spi, REG_LR_DETECTIONTHRESHOLD,
-                             RFLR_DETECTIONTHRESH_SF6 );
-            }
-            else
-            {
-            	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
-                sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE,
-                             ( reg &
-                             RFLR_DETECTIONOPTIMIZE_MASK ) |
-                             RFLR_DETECTIONOPTIMIZE_SF7_TO_SF12 );
-                sx127x_reg_write(spi, REG_LR_DETECTIONTHRESHOLD,
-                             RFLR_DETECTIONTHRESH_SF7_TO_SF12 );
-            }
-        }
-        break;
-    }
-
-	return ret;
-}
-
-
-
-void sx127x_set_txconfig(struct sx127x *sx127x_ptr)
-{
-	int ret = 0;
-	struct spi_device *spi = to_spi_device(sx127x_ptr->dev);
-	RadioModems_t modem = sx127x_ptr->cfg.Modem;
-	u32 freq = sx127x_ptr->cfg.LoRa.tChannel;
-
-    sx127x_set_modem(sx127x_ptr, modem);
-
-	sx127x_set_freq(sx127x_ptr, freq);
-
-    sx127x_set_txpower(sx127x_ptr, power);
-
-    switch( modem )
-    {
-    case MODEM_FSK:
-        {
-#if 0			
-            SX1276.Settings.Fsk.Power = power;
-            SX1276.Settings.Fsk.Fdev = fdev;
-            SX1276.Settings.Fsk.Bandwidth = bandwidth;
-            SX1276.Settings.Fsk.Datarate = datarate;
-            SX1276.Settings.Fsk.PreambleLen = preambleLen;
-            SX1276.Settings.Fsk.FixLen = fixLen;
-            SX1276.Settings.Fsk.CrcOn = crcOn;
-            SX1276.Settings.Fsk.IqInverted = iqInverted;
-            SX1276.Settings.Fsk.TxTimeout = timeout;
-
-            fdev = ( uint16_t )( ( double )fdev / ( double )FREQ_STEP );
-            SX1276Write( REG_FDEVMSB, ( uint8_t )( fdev >> 8 ) );
-            SX1276Write( REG_FDEVLSB, ( uint8_t )( fdev & 0xFF ) );
-
-            datarate = ( uint16_t )( ( double )XTAL_FREQ / ( double )datarate );
-            SX1276Write( REG_BITRATEMSB, ( uint8_t )( datarate >> 8 ) );
-            SX1276Write( REG_BITRATELSB, ( uint8_t )( datarate & 0xFF ) );
-
-            SX1276Write( REG_PREAMBLEMSB, ( preambleLen >> 8 ) & 0x00FF );
-            SX1276Write( REG_PREAMBLELSB, preambleLen & 0xFF );
-
-            SX1276Write( REG_PACKETCONFIG1,
-                         ( SX1276Read( REG_PACKETCONFIG1 ) &
-                           RF_PACKETCONFIG1_CRC_MASK &
-                           RF_PACKETCONFIG1_PACKETFORMAT_MASK ) |
-                           ( ( fixLen == 1 ) ? RF_PACKETCONFIG1_PACKETFORMAT_FIXED : RF_PACKETCONFIG1_PACKETFORMAT_VARIABLE ) |
-                           ( crcOn << 4 ) );
-            SX1276Write( REG_PACKETCONFIG2, ( SX1276Read( REG_PACKETCONFIG2 ) | RF_PACKETCONFIG2_DATAMODE_PACKET ) );
-#endif			
-        }
-        break;
-    case MODEM_LORA:
-        {
-			u8 reg = 0;
-			s8 power = sx127x_ptr->cfg.LoRa.Power;
-			u32 freq = sx127x_ptr->cfg.LoRa.tChannel;
-			u32 bandwidth = sx127x_ptr->cfg.LoRa.tBandwidth;
-			u32 datarate = sx127x_ptr->cfg.LoRa.tDatarate;
-			u8 coderate = sx127x_ptr->cfg.LoRa.tCoderate;
-			bool freqHopOn = sx127x_ptr->cfg.LoRa.FreqHopOn;
-			s8 hopPeriod = sx127x_ptr->cfg.LoRa.HopPeriod;
-			bool fixlen = sx127x_ptr->cfg.LoRa.FixLen;
-			bool crcOn = sx127x_ptr->cfg.LoRa.CrcOn;
-			u16 preambleLen = sx127x_ptr->cfg.LoRa.PreambleLen;
-            if( datarate > 12 )
-            {
-                datarate = 12;
-            }
-            else if( datarate < 6 )
-            {
-                datarate = 6;
-            }
-            if( ( ( bandwidth == 7 ) && ( ( datarate == 11 ) || ( datarate == 12 ) ) ) ||
-                ( ( bandwidth == 8 ) && ( datarate == 12 ) ) )
-            {
-                sx127x_ptr->cfg.LoRa.LowDatarateOptimize = 0x01;
-            }
-            else
-            {
-                sx127x_ptr->cfg.LoRa.LowDatarateOptimize = 0x00;
-            }
-
-            if( freqHopOn == true )
-            {
-            	sx127x_reg_read(spi, REG_LR_PLLHOP, &reg);
-                sx127x_reg_write(spi, REG_LR_PLLHOP, (reg&RFLR_PLLHOP_FASTHOP_MASK)|RFLR_PLLHOP_FASTHOP_ON);
-                sx127x_reg_write(spi, REG_LR_HOPPERIOD, hopPeriod);
-            }
-
-			sx127x_reg_read(spi, REG_LR_MODEMCONFIG1, &reg);
-            sx127x_reg_write(spi, REG_LR_MODEMCONFIG1,
-                         ( reg &
-                           RFLR_MODEMCONFIG1_BW_MASK &
-                           RFLR_MODEMCONFIG1_CODINGRATE_MASK &
-                           RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK ) |
-                           ( bandwidth << 4 ) | ( coderate << 1 ) |
-                           fixlen );
-
-			sx127x_reg_read(spi, REG_LR_MODEMCONFIG2, &reg);
-            sx127x_reg_write(spi, REG_LR_MODEMCONFIG2,
-                           (reg&
-                           RFLR_MODEMCONFIG2_SF_MASK &
-                           RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK ) |
-                           ( datarate << 4 ) | ( crcOn << 2 ) );
-
-			sx127x_reg_read(spi, REG_LR_MODEMCONFIG3, &reg);
-            sx127x_reg_write(spi, REG_LR_MODEMCONFIG3,
-                            (reg&
-                            RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK ) |
-                            (SX1276.Settings.LoRa.LowDatarateOptimize << 3 ) );
-
-            sx127x_reg_write(spi, REG_LR_PREAMBLEMSB, ( preambleLen >> 8 ) & 0x00FF );
-            sx127x_reg_write(spi, REG_LR_PREAMBLELSB, preambleLen & 0xFF );
-
-            if( datarate == 6 )
-            {
-            	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
-                sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE,
-                             ( reg &
-                               RFLR_DETECTIONOPTIMIZE_MASK ) |
-                               RFLR_DETECTIONOPTIMIZE_SF6 );
-                sx127x_reg_write(spi, REG_LR_DETECTIONTHRESHOLD,
-                             RFLR_DETECTIONTHRESH_SF6 );
-            }
-            else
-            {
-            	SX1276Read(spi, REG_LR_DETECTOPTIMIZE, &reg);
-                sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE,
-                             ( reg &
-                             RFLR_DETECTIONOPTIMIZE_MASK ) |
-                             RFLR_DETECTIONOPTIMIZE_SF7_TO_SF12 );
-                sx127x_reg_write(spi, REG_LR_DETECTIONTHRESHOLD,
-                             RFLR_DETECTIONTHRESH_SF7_TO_SF12 );
-            }
-        }
-        break;
-    }
-
-	return ret;
-}
-
-
-int sx127x_setrx(struct sx127x *sx127x_ptr)
-{
-	int ret = 0;
-	u8 reg = 0;
-    bool rxContinuous = true;
-	RadioModems_t modem = sx127x_ptr->cfg.Modem;
-	struct spi_device *spi = to_spi_device(sx127x_ptr->dev);
-
-    switch(modem)
-    {
-  
-    case MODEM_FSK:
-        break;
-    case MODEM_LORA:
-        {
-			u32 freq = sx127x_ptr->cfg.LoRa.rChannel;
-			u32 bandwidth = sx127x_ptr->cfg.LoRa.rBandwidth;
-			bool FreqHopOn = sx127x_ptr->cfg.LoRa.FreqHopOn;
-			bool IqInverted = sx127x_ptr->cfg.LoRa.IqInverted;
-            if(IqInverted == true)
-            {
-            	sx127x_reg_read(spi REG_LR_INVERTIQ, &reg);
-                sx127x_reg_write(spi, REG_LR_INVERTIQ, ((reg&RFLR_INVERTIQ_TX_MASK&RFLR_INVERTIQ_RX_MASK)|RFLR_INVERTIQ_RX_ON|RFLR_INVERTIQ_TX_OFF));
-                sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_ON );
-            }
-            else
-            {
-            	sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg);
-                sx127x_reg_write(spi, REG_LR_INVERTIQ, ((reg&RFLR_INVERTIQ_TX_MASK&RFLR_INVERTIQ_RX_MASK)|RFLR_INVERTIQ_RX_OFF|RFLR_INVERTIQ_TX_OFF));
-                sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_OFF );
-            }
-
-            // ERRATA 2.3 - Receiver Spurious Reception of a LoRa Signal
-            
-            if(bandwidth < 9)
-            {
-            	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, reg);
-                sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE, (reg & 0x7F));
-                sx127x_reg_write(spi, REG_LR_TEST30, 0x00);
-                switch(bandwidth)
-                {
-                case 0: // 7.8 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x48);
-                    sx127x_set_freq(sx127x_ptr, (freq + 7810));
-                    break;
-                case 1: // 10.4 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
-                    sx127x_set_freq(sx127x_ptr, (freq + 10420));
-                    break;
-                case 2: // 15.6 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
-                    sx127x_set_freq(sx127x_ptr, (freq + 15620));
-                    break;
-                case 3: // 20.8 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
-                    sx127x_set_freq(sx127x_ptr, (freq + 20830));
-                    break;
-                case 4: // 31.2 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x44 );
-                    sx127x_set_freq(sx127x_ptr, (freq + 31250));
-                    break;
-                case 5: // 41.4 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
-                    sx127x_set_freq(sx127x_ptr, (freq + 41670));
-                    break;
-                case 6: // 62.5 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x40);
-                    break;
-                case 7: // 125 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x40);
-                    break;
-                case 8: // 250 kHz
-                    sx127x_reg_write(spi, REG_LR_TEST2F, 0x40);
-                    break;
-                }
-            }
-            else
-            {
-            	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
-                sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE, (reg | 0x80));
-            }
-
-            rxContinuous = sx127x_ptr->cfg.LoRa.RxContinuous;
-			//we just use only this recv mode
-			rxContinuous = true;
-            if(FreqHopOn == true)
-            {
-                sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, //RFLR_IRQFLAGS_RXTIMEOUT |
-                                                  //RFLR_IRQFLAGS_RXDONE |
-                                                  //RFLR_IRQFLAGS_PAYLOADCRCERROR |
-                                                  RFLR_IRQFLAGS_VALIDHEADER |
-                                                  RFLR_IRQFLAGS_TXDONE |
-                                                  RFLR_IRQFLAGS_CADDONE |
-                                                  //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
-                                                  RFLR_IRQFLAGS_CADDETECTED);
-
-                // DIO0=RxDone, DIO2=FhssChangeChannel
-                sx127x_reg_read(spi, REG_DIOMAPPING1, &reg);
-                sx127x_reg_write(spi, REG_DIOMAPPING1, (reg&RFLR_DIOMAPPING1_DIO0_MASK&RFLR_DIOMAPPING1_DIO2_MASK) | 
-														RFLR_DIOMAPPING1_DIO0_00|RFLR_DIOMAPPING1_DIO2_00);
-            }
-            else
-            {
-                sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, //RFLR_IRQFLAGS_RXTIMEOUT |
-                                                  //RFLR_IRQFLAGS_RXDONE |
-                                                  //RFLR_IRQFLAGS_PAYLOADCRCERROR |
-                                                  RFLR_IRQFLAGS_VALIDHEADER |
-                                                  RFLR_IRQFLAGS_TXDONE |
-                                                  RFLR_IRQFLAGS_CADDONE |
-                                                  RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
-                                                  RFLR_IRQFLAGS_CADDETECTED );
-
-                // DIO0=RxDone
-                sx127x_reg_read(spi, REG_DIOMAPPING1, &reg);
-                sx127x_reg_write(spi, REG_DIOMAPPING1, (reg&RFLR_DIOMAPPING1_DIO0_MASK)|RFLR_DIOMAPPING1_DIO0_00);
-            }
-            sx127x_reg_write(spi, REG_LR_FIFORXBASEADDR, 0 );
-            sx127x_reg_write(spi, REG_LR_FIFOADDRPTR, 0 );
-        }
-        break;
-    }
-
-    if( SX1276.Settings.Modem == MODEM_FSK )
-    {
-        sx127x_set_opmode(sx127x_ptr, RF_OPMODE_RECEIVER );
+        LowDatarateOptimize = 0x01;
     }
     else
     {
-        if( rxContinuous == true )
-        {
-            sx127x_set_opmode(sx127x_ptr, RFLR_OPMODE_RECEIVER);
-        }
-        else
-        {
-            sx127x_set_opmode(sx127x_ptr, RFLR_OPMODE_RECEIVER_SINGLE);
-        }
+        LowDatarateOptimize = 0x00;
     }
 
+
+	sx127x_reg_read(spi, REG_LR_MODEMCONFIG1, &reg);
+    sx127x_reg_write(spi, REG_LR_MODEMCONFIG1,
+                 ( reg &
+                   RFLR_MODEMCONFIG1_BW_MASK &
+                   RFLR_MODEMCONFIG1_CODINGRATE_MASK &
+                   RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK ) |
+                   ( bandwidth << 4 ) | ( coderate << 1 ) |
+                   fixLen );
+
+	sx127x_reg_read(spi, REG_LR_MODEMCONFIG2, &reg);
+    sx127x_reg_write(spi, REG_LR_MODEMCONFIG2,
+                 ( reg &
+                   RFLR_MODEMCONFIG2_SF_MASK &
+                   RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK &
+                   RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK ) |
+                   ( datarate << 4 ) | ( crcOn << 2 ) |
+                   ( ( symbTimeout >> 8 ) & ~RFLR_MODEMCONFIG2_SYMBTIMEOUTMSB_MASK ) );
+
+	sx127x_reg_read(spi, REG_LR_MODEMCONFIG3, reg);
+    sx127x_reg_write(spi, REG_LR_MODEMCONFIG3,
+                 ( reg &
+                   RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK ) |
+                   ( LowDatarateOptimize << 3 ) );
+
+    sx127x_reg_write(spi, REG_LR_SYMBTIMEOUTLSB, ( u8 )( symbTimeout & 0xFF ) );
+
+    sx127x_reg_write(spi, REG_LR_PREAMBLEMSB, ( u8 )( ( preambleLen >> 8 ) & 0xFF ) );
+    sx127x_reg_write(spi, REG_LR_PREAMBLELSB, ( u8 )( preambleLen & 0xFF ) );
+
+    if( fixLen == true )
+    {
+        sx127x_reg_write(spi, REG_LR_PAYLOADLENGTH, payloadLen );
+    }
+
+    if(freqHopOn == true )
+    {
+    	sx127x_reg_read(spi, REG_LR_PLLHOP, &reg);
+        sx127x_reg_write(spi, REG_LR_PLLHOP, ( reg & RFLR_PLLHOP_FASTHOP_MASK ) | RFLR_PLLHOP_FASTHOP_ON );
+        sx127x_reg_write(spi, REG_LR_HOPPERIOD, hopPeriod );
+    }
+
+    if( ( bandwidth == 9 ) && ( freq > RF_MID_BAND_THRESH ) )
+    {
+        // ERRATA 2.1 - Sensitivity Optimization with a 500 kHz Bandwidth
+        sx127x_reg_write(spi, REG_LR_TEST36, 0x02);
+        sx127x_reg_write(spi, REG_LR_TEST3A, 0x64);
+    }
+    else if( bandwidth == 9 )
+    {
+        // ERRATA 2.1 - Sensitivity Optimization with a 500 kHz Bandwidth
+        sx127x_reg_write(spi, REG_LR_TEST36, 0x02);
+        sx127x_reg_write(spi, REG_LR_TEST3A, 0x7F);
+    }
+    else
+    {
+        // ERRATA 2.1 - Sensitivity Optimization with a 500 kHz Bandwidth
+        sx127x_reg_write(spi, REG_LR_TEST36, 0x03);
+    }
+
+    if( datarate == 6 )
+    {
+    	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
+        sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE,
+                     (reg  &
+                       RFLR_DETECTIONOPTIMIZE_MASK ) |
+                       RFLR_DETECTIONOPTIMIZE_SF6 );
+        sx127x_reg_write(spi, REG_LR_DETECTIONTHRESHOLD,
+                     RFLR_DETECTIONTHRESH_SF6 );
+    }
+    else
+    {
+    	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
+        sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE,
+                     ( reg &
+                     RFLR_DETECTIONOPTIMIZE_MASK ) |
+                     RFLR_DETECTIONOPTIMIZE_SF7_TO_SF12 );
+        sx127x_reg_write(spi, REG_LR_DETECTIONTHRESHOLD,
+                     RFLR_DETECTIONTHRESH_SF7_TO_SF12 );
+    }
+
+    if(iqInverted == true)
+    {
+        sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg) ;
+        
+        sx127x_reg_write(spi, REG_LR_INVERTIQ, ((reg & RFLR_INVERTIQ_TX_MASK & RFLR_INVERTIQ_RX_MASK) |
+                                                RFLR_INVERTIQ_RX_ON | RFLR_INVERTIQ_TX_OFF));
+        sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_ON);
+    }
+    else
+    {
+        sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg) ;
+        
+        sx127x_reg_write(spi, REG_LR_INVERTIQ, ((reg & RFLR_INVERTIQ_TX_MASK & RFLR_INVERTIQ_RX_MASK) | 
+                                            RFLR_INVERTIQ_RX_OFF | RFLR_INVERTIQ_TX_OFF));
+        sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_OFF);
+    }
+
+    // ERRATA 2.3 - Receiver Spurious Reception of a LoRa Signal
+    if(bandwidth < 9)
+    {
+        sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
+        sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE, reg & 0x7F);
+        sx127x_reg_write(spi, REG_LR_TEST30, 0x00);
+        switch(bandwidth)
+        {
+        case 0: // 7.8 kHz
+            sx127x_reg_write(spi, REG_LR_TEST2F, 0x48);
+            sx127x_set_freq(sx127x_ptr, freq + 7810);
+            break;
+        case 1: // 10.4 kHz
+            sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
+            sx127x_set_freq(sx127x_ptr, freq + 10420 );
+            break;
+        case 2: // 15.6 kHz
+            sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
+            sx127x_set_freq(sx127x_ptr, freq + 15620 );
+            break;
+        case 3: // 20.8 kHz
+            sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
+            sx127x_set_freq(sx127x_ptr, freq + 20830 );
+            break;
+        case 4: // 31.2 kHz
+            sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
+            sx127x_set_freq(sx127x_ptr, freq + 31250);
+            break;
+        case 5: // 41.4 kHz
+            sx127x_reg_write(spi, REG_LR_TEST2F, 0x44);
+            sx127x_set_freq(sx127x_ptr, freq + 41670 );
+            break;
+        case 6: // 62.5 kHz
+            sx127x_reg_write(spi, REG_LR_TEST2F, 0x40);
+            break;
+        case 7: // 125 kHz
+            sx127x_reg_write(spi, REG_LR_TEST2F, 0x40);
+            break;
+        case 8: // 250 kHz
+            sx127x_reg_write(spi,  REG_LR_TEST2F, 0x40);
+            break;
+        }
+    }
+    else
+    {
+        sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
+        sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE, reg | 0x80 );
+    }
+
+    if(freqHopOn == true )
+    {
+        sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, //RFLR_IRQFLAGS_RXTIMEOUT |
+                                          //RFLR_IRQFLAGS_RXDONE |
+                                          //RFLR_IRQFLAGS_PAYLOADCRCERROR |
+                                          RFLR_IRQFLAGS_VALIDHEADER |
+                                          RFLR_IRQFLAGS_TXDONE |
+                                          RFLR_IRQFLAGS_CADDONE |
+                                          //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
+                                          RFLR_IRQFLAGS_CADDETECTED);
+
+        // DIO0=RxDone, DIO2=FhssChangeChannel
+        sx127x_reg_read(spi, REG_DIOMAPPING1, &reg);
+        sx127x_reg_write(spi, REG_DIOMAPPING1, (reg & RFLR_DIOMAPPING1_DIO0_MASK & RFLR_DIOMAPPING1_DIO2_MASK) | 
+                                                RFLR_DIOMAPPING1_DIO0_00 | RFLR_DIOMAPPING1_DIO2_00);
+    }
+    else
+    {
+        sx127x_reg_write( REG_LR_IRQFLAGSMASK, //RFLR_IRQFLAGS_RXTIMEOUT |
+                                          //RFLR_IRQFLAGS_RXDONE |
+                                          //RFLR_IRQFLAGS_PAYLOADCRCERROR |
+                                          RFLR_IRQFLAGS_VALIDHEADER |
+                                          RFLR_IRQFLAGS_TXDONE |
+                                          RFLR_IRQFLAGS_CADDONE |
+                                          RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
+                                          RFLR_IRQFLAGS_CADDETECTED);
+
+        // DIO0=RxDone
+        sx127x_reg_read(spi, REG_DIOMAPPING1, &reg);
+        sx127x_reg_write(spi, REG_DIOMAPPING1, (reg & RFLR_DIOMAPPING1_DIO0_MASK) | RFLR_DIOMAPPING1_DIO0_00);
+    }
+
+error:
+    
 	return ret;
 }
 
 
-void sx127x_settx(struct sx127x *sx127x_ptr, u8 *buffer_ptr, u8 buffer_len)
+static int sx127x_set_txconfig(struct sx127x *sx127x_ptr, u32 freq, s8 power, u32 bandwidth, u32 datarate, u32 coderate, u16 preambleLen)
 {
 	int ret = 0;
-	u8 reg = 0;
-    uint32_t txTimeout = 0;
-	RadioModems_t modem = sx127x_ptr->cfg.Modem;
+    u8 reg = 0;
+    bool crcOn = true;
+    bool fixLen = false;
+    bool freqHopOn = false;
+    bool iqInverted = 0;
+    u8 hopPeriod = 0; 
+    bool LowDatarateOptimize = false;
 	struct spi_device *spi = to_spi_device(sx127x_ptr->dev);
 
-    switch(modem)
+	ret = sx127x_set_freq(sx127x_ptr, freq);
+    if(ret < 0)
+    {
+        goto error;
+    }
+
+    sx127x_set_txpower(sx127x_ptr, power);
+    
+    if( datarate > 12 )
+    {
+        datarate = 12;
+    }
+    else if( datarate < 6 )
+    {
+        datarate = 6;
+    }
+    if( ( ( bandwidth == 7 ) && ( ( datarate == 11 ) || ( datarate == 12 ) ) ) ||
+        ( ( bandwidth == 8 ) && ( datarate == 12 ) ) )
+    {
+        LowDatarateOptimize = 0x01;
+    }
+    else
+    {
+        LowDatarateOptimize = 0x00;
+    }
+
+    if( freqHopOn == true )
+    {
+    	sx127x_reg_read(spi, REG_LR_PLLHOP, &reg);
+        sx127x_reg_write(spi, REG_LR_PLLHOP, (reg & RFLR_PLLHOP_FASTHOP_MASK) | RFLR_PLLHOP_FASTHOP_ON);
+        sx127x_reg_write(spi, REG_LR_HOPPERIOD, hopPeriod);
+    }
+
+	sx127x_reg_read(spi, REG_LR_MODEMCONFIG1, &reg);
+    sx127x_reg_write(spi, REG_LR_MODEMCONFIG1,
+                 ( reg &
+                   RFLR_MODEMCONFIG1_BW_MASK &
+                   RFLR_MODEMCONFIG1_CODINGRATE_MASK &
+                   RFLR_MODEMCONFIG1_IMPLICITHEADER_MASK ) |
+                   ( bandwidth << 4 ) | ( coderate << 1 ) |
+                   fixLen );
+
+	sx127x_reg_read(spi, REG_LR_MODEMCONFIG2, &reg);
+    sx127x_reg_write(spi, REG_LR_MODEMCONFIG2,
+                   (reg&
+                   RFLR_MODEMCONFIG2_SF_MASK &
+                   RFLR_MODEMCONFIG2_RXPAYLOADCRC_MASK ) |
+                   ( datarate << 4 ) | ( crcOn << 2 ) );
+
+	sx127x_reg_read(spi, REG_LR_MODEMCONFIG3, &reg);
+    sx127x_reg_write(spi, REG_LR_MODEMCONFIG3,
+                    (reg&
+                    RFLR_MODEMCONFIG3_LOWDATARATEOPTIMIZE_MASK ) |
+                    (LowDatarateOptimize << 3 ) );
+
+    sx127x_reg_write(spi, REG_LR_PREAMBLEMSB, ( preambleLen >> 8 ) & 0x00FF );
+    sx127x_reg_write(spi, REG_LR_PREAMBLELSB, preambleLen & 0xFF );
+
+    if( datarate == 6 )
+    {
+    	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
+        sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE,
+                     ( reg &
+                       RFLR_DETECTIONOPTIMIZE_MASK ) |
+                       RFLR_DETECTIONOPTIMIZE_SF6 );
+        sx127x_reg_write(spi, REG_LR_DETECTIONTHRESHOLD,
+                     RFLR_DETECTIONTHRESH_SF6 );
+    }
+    else
+    {
+    	sx127x_reg_read(spi, REG_LR_DETECTOPTIMIZE, &reg);
+        sx127x_reg_write(spi, REG_LR_DETECTOPTIMIZE,
+                     ( reg &
+                     RFLR_DETECTIONOPTIMIZE_MASK ) |
+                     RFLR_DETECTIONOPTIMIZE_SF7_TO_SF12 );
+        sx127x_reg_write(spi, REG_LR_DETECTIONTHRESHOLD,
+                     RFLR_DETECTIONTHRESH_SF7_TO_SF12 );
+    }
+
+    if(iqInverted == true)
+    {
+    	sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg) ;
+        sx127x_reg_write(spi, REG_LR_INVERTIQ, ((reg& RFLR_INVERTIQ_TX_MASK & RFLR_INVERTIQ_RX_MASK) | 
+                                                RFLR_INVERTIQ_RX_OFF | RFLR_INVERTIQ_TX_ON));
+        sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_ON );
+    }
+    else
+    {
+    	sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg);
+        sx127x_reg_write(spi, REG_LR_INVERTIQ, ((reg & RFLR_INVERTIQ_TX_MASK & RFLR_INVERTIQ_RX_MASK) | 
+                                                RFLR_INVERTIQ_RX_OFF | RFLR_INVERTIQ_TX_OFF));
+        sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_OFF);
+    }
+	
+
+
+	if(freqHopOn == true)
+    {
+        sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
+                                          RFLR_IRQFLAGS_RXDONE |
+                                          RFLR_IRQFLAGS_PAYLOADCRCERROR |
+                                          RFLR_IRQFLAGS_VALIDHEADER |
+                                          //RFLR_IRQFLAGS_TXDONE |
+                                          RFLR_IRQFLAGS_CADDONE |
+                                          //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
+                                          RFLR_IRQFLAGS_CADDETECTED );
+
+        // DIO0=TxDone, DIO2=FhssChangeChannel
+        sx127x_reg_read(spi, REG_DIOMAPPING1, &reg);
+        sx127x_reg_write(spi, REG_DIOMAPPING1, (reg & RFLR_DIOMAPPING1_DIO0_MASK & RFLR_DIOMAPPING1_DIO2_MASK ) | 
+                                                RFLR_DIOMAPPING1_DIO0_01 | RFLR_DIOMAPPING1_DIO2_00 );
+    }
+    else
+    {
+        sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
+                                          RFLR_IRQFLAGS_RXDONE |
+                                          RFLR_IRQFLAGS_PAYLOADCRCERROR |
+                                          RFLR_IRQFLAGS_VALIDHEADER |
+                                          //RFLR_IRQFLAGS_TXDONE |
+                                          RFLR_IRQFLAGS_CADDONE |
+                                          RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
+                                          RFLR_IRQFLAGS_CADDETECTED);
+
+        // DIO0=TxDone
+        sx127x_reg_read(spi, REG_DIOMAPPING1, &reg);
+        sx127x_reg_write(spi, REG_DIOMAPPING1, (reg & RFLR_DIOMAPPING1_DIO0_MASK) | RFLR_DIOMAPPING1_DIO0_01);
+    }
+    
+error:
+    
+	return ret;
+}
+
+
+static int sx127x_setrx(struct sx127x *sx127x_ptr)
+{
+    int ret = 0;
+    bool rxContinuous = true;
+    struct spi_device *spi = to_spi_device(sx127x_ptr->dev);
+
+    
+    sx127x_reg_write(spi, REG_LR_FIFORXBASEADDR, 0);
+    sx127x_reg_write(spi, REG_LR_FIFOADDRPTR, 0);
+
+
+    if( rxContinuous == true )
+    {
+        sx127x_set_opmode(sx127x_ptr, RFLR_OPMODE_RECEIVER);
+    }
+    else
+    {
+        sx127x_set_opmode(sx127x_ptr, RFLR_OPMODE_RECEIVER_SINGLE);
+    }
+
+error:
+
+    return ret;
+}
+
+static int sx127x_start_cad(struct sx127x *sx127x_ptr)
+{
+    int ret = 0;
+    switch( SX1276.Settings.Modem )
     {
     case MODEM_FSK:
+        {
+
+        }
         break;
     case MODEM_LORA:
         {
-			bool FreqHopOn = sx127x_ptr->cfg.LoRa.FreqHopOn;
-			bool IqInverted = sx127x_ptr->cfg.LoRa.IqInverted;
-            if(IqInverted == true)
-            {
-            	sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg);
-                sx127x_reg_write(spi, REG_LR_INVERTIQ, ((reg & RFLR_INVERTIQ_TX_MASK & RFLR_INVERTIQ_RX_MASK) |
-														RFLR_INVERTIQ_RX_OFF | RFLR_INVERTIQ_TX_ON));
-                sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_ON );
-            }
-            else
-            {
-            	sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg);
-                sx127x_reg_write(spi, REG_LR_INVERTIQ, ((reg & RFLR_INVERTIQ_TX_MASK & RFLR_INVERTIQ_RX_MASK) | 
-														RFLR_INVERTIQ_RX_OFF | RFLR_INVERTIQ_TX_OFF));
-                sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_OFF );
-            }
+            SX1276Write( REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
+                                        RFLR_IRQFLAGS_RXDONE |
+                                        RFLR_IRQFLAGS_PAYLOADCRCERROR |
+                                        RFLR_IRQFLAGS_VALIDHEADER |
+                                        RFLR_IRQFLAGS_TXDONE |
+                                        //RFLR_IRQFLAGS_CADDONE |
+                                        RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL // |
+                                        //RFLR_IRQFLAGS_CADDETECTED
+                                        );
 
-            // Initializes the payload size
-            sx127x_reg_write(spi, REG_LR_PAYLOADLENGTH, buffer_len);
+            // DIO3=CADDone
+            sx127x_reg_read(spi, REG_DIOMAPPING1, &reg)
+            sx127x_reg_write(spi, REG_DIOMAPPING1, (reg & RFLR_DIOMAPPING1_DIO3_MASK) | RFLR_DIOMAPPING1_DIO3_00);
 
-            // Full buffer used for Tx
-            sx127x_reg_write(spi, REG_LR_FIFOTXBASEADDR, 0 );
-            sx127x_reg_write(spi, REG_LR_FIFOADDRPTR, 0 );
-
-            // FIFO operations can not take place in Sleep mode
-            sx127x_reg_read(spi, REG_OPMODE, &reg);
-            if((reg & ~RF_OPMODE_MASK) == RF_OPMODE_SLEEP)
-            {
-                sx127x_set_stby(sx127x_ptr);
-                mdelay( 1 );
-            }
-            // Write payload buffer
-            //SX1276WriteFifo( buffer_ptr, buffer_len);
-
-			if(FreqHopOn == true)
-            {
-                sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
-                                                  RFLR_IRQFLAGS_RXDONE |
-                                                  RFLR_IRQFLAGS_PAYLOADCRCERROR |
-                                                  RFLR_IRQFLAGS_VALIDHEADER |
-                                                  //RFLR_IRQFLAGS_TXDONE |
-                                                  RFLR_IRQFLAGS_CADDONE |
-                                                  //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
-                                                  RFLR_IRQFLAGS_CADDETECTED );
-
-                // DIO0=TxDone, DIO2=FhssChangeChannel
-                sx127x_reg_read(spi, REG_DIOMAPPING1, &reg);
-                sx127x_reg_write(spi, REG_DIOMAPPING1, (reg & RFLR_DIOMAPPING1_DIO0_MASK & RFLR_DIOMAPPING1_DIO2_MASK) | 
-														RFLR_DIOMAPPING1_DIO0_01 | RFLR_DIOMAPPING1_DIO2_00);
-            }
-            else
-            {
-                sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
-                                                  RFLR_IRQFLAGS_RXDONE |
-                                                  RFLR_IRQFLAGS_PAYLOADCRCERROR |
-                                                  RFLR_IRQFLAGS_VALIDHEADER |
-                                                  //RFLR_IRQFLAGS_TXDONE |
-                                                  RFLR_IRQFLAGS_CADDONE |
-                                                  RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
-                                                  RFLR_IRQFLAGS_CADDETECTED );
-
-                // DIO0=TxDone
-				sx127x_reg_read(spi, REG_DIOMAPPING1, &reg);
-                sx127x_reg_write(spi, REG_DIOMAPPING1, (reg & RFLR_DIOMAPPING1_DIO0_MASK) | RFLR_DIOMAPPING1_DIO0_01);
-            }
+            SX1276.Settings.State = RF_CAD;
+            SX1276SetOpMode( RFLR_OPMODE_CAD );
         }
         break;
+    default:
+        break;
     }
-
-
-    sx127x_set_opmode(sx127x_ptr, RF_OPMODE_TRANSMITTER);
-
-	return ret;
 }
 
 
@@ -1787,7 +1575,9 @@ int sx127x_start_rx(struct sx127x *sx127x_ptr)
 {
 	int ret = 0;
 
-	ret = sx127x_set_rxconfig(sx127x_ptr);
+	ret = sx127x_set_rxconfig(sx127x_ptr, sx127x_ptr->cfg.LoRa.rChannel, sx127x_ptr->cfg.LoRa.rBandwidth, 
+                                          sx127x_ptr->cfg.LoRa.rDatarate, sx127x_ptr->cfg.LoRa.rCoderate, 
+                                          sx127x_ptr->cfg.LoRa.PreambleLen);
 	if(ret < 0)
 	{
 		goto error;
@@ -1802,102 +1592,6 @@ int sx127x_start_rx(struct sx127x *sx127x_ptr)
 error:
 
 	return ret;
-}
-
-int sx127x_start(struct sx127x *sx127x_ptr)
-{
-	int ret = 0;
-	
-	ret = sx127x_set_rxconfig(sx127x_ptr);
-	if(ret < 0)
-	{
-		goto error;
-	}
-
-	ret = sx127x_setrx(sx127x_ptr);
-	if(ret < 0)
-	{
-		goto error;
-	}
-
-
-	return ret;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-int SX127XGetModem(struct sx127x *data, enum sx127x_modulation *modulation)
-{
-    int ret = 0;
-    u8 opmode;
-    
-    ret = sx127x_reg_read(data->spidevice, REG_OPMODE, &opmode);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    
-    if(opmode & RFLR_OPMODE_LONGRANGEMODE_ON) {
-		*modulation = SX127X_MODULATION_LORA;
-	}
-	else {
-		opmode = opmode & SX127X_REG_OPMODE_FSKOOK_MODULATIONTYPE;
-		if(opmode == SX127X_REG_OPMODE_FSKOOK_MODULATIONTYPE_FSK) {
-			*modulation = SX127X_MODULATION_FSK;
-		}
-		else if(opmode == SX127X_REG_OPMODE_FSKOOK_MODULATIONTYPE_OOK) {
-			*modulation = SX127X_MODULATION_OOK;
-		}else{
-            *modulation = SX127X_MODULATION_INVALID;
-        }
-	}
-
-error:
-
-    return ret;
-}
-static enum sx127x_modulation sx127x_getmodulation(struct sx127x *data) {
-	int ret;
-    enum sx127x_modulation modem;
-    
-    ret = SX127XGetModem(data, &modem);
-    if(ret < 0)
-    {
-       goto error;
-    }
-
-    return modem;
-    
-error:
-    
-	return SX127X_MODULATION_INVALID;
 }
 
 static int sx127x_indexofstring(const char* str, const char** options, unsigned noptions){
@@ -1914,11 +1608,11 @@ static ssize_t sx127x_modulation_show(struct device *child, struct device_attrib
 {
 	struct sx127x *data = dev_get_drvdata(child);
 	u8 opmode;
-	enum sx127x_modulation mod;
+	RadioModems_t mod;
 	int ret;
 	mutex_lock(&data->mutex);
 	
-	mod = sx127x_getmodulation(data);
+	mod = sx127x_get_modem(data, &mod);
 	if(mod == SX127X_MODULATION_INVALID){
 		ret = sprintf(buf, "%s\n", invalid);
 	}
@@ -1930,55 +1624,24 @@ static ssize_t sx127x_modulation_show(struct device *child, struct device_attrib
 
 }
 
-static int SX127xSetModem(struct sx127x *data, enum sx127x_modulation modulation){
-	u8 opmode;
-	sx127x_reg_read(data->spidevice, SX127X_REG_OPMODE, &opmode);
-
-	// LoRa mode bit can only be changed in sleep mode
-	if(opmode & SX127X_REG_OPMODE_MODE){
-		dev_warn(data->chardevice, "switching to sleep mode before changing modulation\n");
-		opmode &= ~SX127X_REG_OPMODE_MODE;
-		sx127x_reg_write(data->spidevice, SX127X_REG_OPMODE, opmode);
-	}
-
-	dev_warn(data->chardevice, "setting modulation to %s\n", modstr[modulation]);
-	switch(modulation){
-		case SX127X_MODULATION_FSK:
-		case SX127X_MODULATION_OOK:
-			opmode &= ~SX127X_REG_OPMODE_LONGRANGEMODE;
-            data->cfg.modulation = modulation;
-			data->loraregmap = 0;
-			break;
-		case SX127X_MODULATION_LORA:
-			opmode |= SX127X_REG_OPMODE_LONGRANGEMODE;
-			data->loraregmap = 1;
-			break;
-        default:
-            break;
-	}
-	sx127x_reg_write(data->spidevice, SX127X_REG_OPMODE, opmode);
-	return 0;
-}
-
-static int sx127x_setmodulation(struct sx127x *data, enum sx127x_modulation modulation){
+static int sx127x_setmodulation(struct sx127x *data, RadioModems_t modulation){
     int ret = 0;
 
 	dev_warn(data->chardevice, "setting modulation to %s\n", modstr[modulation]);
 	switch(modulation){
-		case SX127X_MODULATION_FSK:
-		case SX127X_MODULATION_OOK:
+		case MODEM_FSK:
 			data->loraregmap = 0;
-            data->cfg.modulation = modulation;
+            data->cfg.Modem = modulation;
             ret = SX127xSetModem(data, modulation);
             if(ret < 0)
             {
                 goto error;
             }
 			break;
-		case SX127X_MODULATION_LORA:
+		case MODEM_LORA:
 			data->loraregmap = 1;
-            data->cfg.modulation = modulation;
-            ret = SX127xSetModem(data, modulation);
+            data->cfg.Modem = modulation;
+            ret = sx127x_set_modem(data, modulation);
             if(ret < 0)
             {
                 goto error;
@@ -2011,78 +1674,24 @@ out:
 
 static DEVICE_ATTR(modulation, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_modulation_show, sx127x_modulation_store);
 
-int SX127XGetOpmode(struct sx127x *data, enum sx127x_opmode *mode)
-{
-    int ret = 0;
-    u8 opmode = 0;
-    
-    mutex_lock(&data->mutex);
-	ret = sx127x_reg_read(data->spidevice, SX127X_REG_OPMODE, &opmode);
-    if(ret < 0)
-    {
-        goto error;
-    }
-	opmode = opmode & SX127X_REG_OPMODE_MODE;
-
-    switch(opmode)
-    {
-    case SX127X_OPMODE_SLEEP:
-        *mode = SX127X_OPMODE_SLEEP;
-        break;
-    case SX127X_OPMODE_STANDBY:
-        *mode = SX127X_OPMODE_STANDBY;
-        break;
-    case SX127X_OPMODE_FSTX:
-        *mode = SX127X_OPMODE_FSTX;
-        break;
-    case SX127X_OPMODE_TX:
-        *mode = SX127X_OPMODE_TX;
-        break;
-    case SX127X_OPMODE_FSRX:
-        *mode = SX127X_OPMODE_FSRX;
-        break;
-    case SX127X_OPMODE_RX:
-        *mode = SX127X_OPMODE_RX;
-        break;
-    case SX127X_OPMODE_RXCONTINUOS:
-        *mode = SX127X_OPMODE_RXCONTINUOS;
-        break;
-    case SX127X_OPMODE_RXSINGLE:
-        *mode = SX127X_OPMODE_RXSINGLE;
-        break;
-    case SX127X_OPMODE_CAD:
-        *mode = SX127X_OPMODE_CAD;
-        break;
-    default:
-        break;
-    }
-    
-	mutex_unlock(&data->mutex);
-
-error:
-
-    return ret;
-}
-
 static ssize_t sx127x_opmode_show(struct device *child, struct device_attribute *attr, char *buf)
 {
     int ret = 0;
 	struct sx127x *data = dev_get_drvdata(child);
 	u8 opmode;
-    enum sx127x_opmode mode;
 	
 
-    ret = SX127XGetOpmode(data, &mode);
+    ret = sx127x_get_opmode(data, &opmode);
     if(ret < 0)
     {
         goto error;
     }
     
-	if(mode > 4){
-		ret = sprintf(buf, "%s\n", opmodestr[mode + 1]);
+	if(opmode > 4){
+		ret = sprintf(buf, "%s\n", opmodestr[opmode + 1]);
 	}
 	else {
-		ret =sprintf(buf, "%s\n", opmodestr[mode]);
+		ret =sprintf(buf, "%s\n", opmodestr[opmode]);
 	}
 
 error:
@@ -2106,64 +1715,10 @@ static int sx127x_toggletxrxen(struct sx127x *data, bool tx){
 	return 0;
 }
 
-int SX127XSetOpmode(struct sx127x *data, enum sx127x_opmode mode)
-{
-    int ret = 0;
-    u8 opmode, diomapping1;
-
-    ret = sx127x_reg_read(data->spidevice, SX127X_REG_OPMODE, &opmode);
-    if(mode < SX127X_OPMODE_SLEEP || mode > SX127X_OPMODE_CAD){
-        ret = -EINVAL;
-        dev_err(data->chardevice, "invalid opmode\n");
-    }
-    else if((opmode & SX127X_REG_OPMODE_LONGRANGEMODE) && (mode == SX127X_OPMODE_RX)){
-        dev_err(data->chardevice, "opmode %s not valid in LoRa mode\n", opmodestr[mode]);
-    }
-    else if(!(opmode & SX127X_REG_OPMODE_LONGRANGEMODE) && (mode > SX127X_OPMODE_RX)) {
-        dev_err(data->chardevice, "opmode %s not valid in FSK/OOK mode\n", opmodestr[mode]);
-    }
-    else {
-        
-        dev_warn(data->chardevice, "setting opmode to %s\n", opmodestr[mode]);
-        sx127x_reg_read(data->spidevice, SX127X_REG_DIOMAPPING1, &diomapping1);
-        diomapping1 &= ~SX127X_REG_DIOMAPPING1_DIO0;
-        switch(mode){
-        case SX127X_OPMODE_CAD:
-            diomapping1 |= SX127X_REG_DIOMAPPING1_DIO0_CADDONE;
-            sx127x_toggletxrxen(data, false);
-            break;
-        case SX127X_OPMODE_TX:
-            diomapping1 |= SX127X_REG_DIOMAPPING1_DIO0_TXDONE;
-            sx127x_toggletxrxen(data, true);
-            break;
-        case SX127X_OPMODE_RX:
-        case SX127X_OPMODE_RXCONTINUOS:
-        case SX127X_OPMODE_RXSINGLE:
-            diomapping1 |= SX127X_REG_DIOMAPPING1_DIO0_RXDONE;
-            sx127x_toggletxrxen(data, false);
-            break;
-        default:
-            dev_warn(data->chardevice, "disabling rx and tx\n");
-            gpiod_set_value(data->gpio_rxen, 0);
-            gpiod_set_value(data->gpio_txen, 0);
-            break;
-        }
-        opmode &= ~SX127X_REG_OPMODE_MODE;
-        if(mode > SX127X_OPMODE_RX){
-            mode -= 1;
-        }
-        opmode |= mode;
-        sx127x_reg_write(data->spidevice, SX127X_REG_DIOMAPPING1, diomapping1);
-        sx127x_reg_write(data->spidevice, SX127X_REG_OPMODE, opmode);
-    }
-    return ret;
-
-}
-
-static int sx127x_setopmode(struct sx127x *data, enum sx127x_opmode mode, bool retain){
+static int sx127x_setopmode(struct sx127x *data, u8 mode, bool retain){
     int ret = 0;
 
-    ret = SX127XSetOpmode(data, mode);
+    ret = sx127x_set_opmode(data, mode);
     if(ret < 0)
     {
         goto error;
@@ -2178,96 +1733,24 @@ error:
 	return ret;
 }
 
-int SX127XSetSyncWord(struct sx127x *data, u8 syncword)
-{
-    int ret = 0;
-    
-    ret = sx127x_reg_write(data->spidevice, SX127X_REG_LORA_SYNCWORD, syncword);
-
-    return ret;
-}
-
 static int sx127x_setsyncword(struct sx127x *data, u8 syncword){
     int ret = 0;
     
     dev_warn(data->chardevice, "setting syncword to %d\n", syncword);
-	ret = SX127XSetSyncWord(data, syncword);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    data->cfg.syncword = syncword;
     
 error:
     
 	return ret;
-}
-
-int SX127XSetInvertIQ(struct sx127x *data, bool invert)
-{
-    int ret = 0;
-    u8 reg;
-    
-    ret = sx127x_reg_read(data->spidevice, SX127X_REG_LORA_INVERTIQ, &reg);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    
-	if(invert)
-		reg |= SX127X_REG_LORA_INVERTIQ_INVERTIQ;
-	else
-		reg &= ~SX127X_REG_LORA_INVERTIQ_INVERTIQ;
-	ret = sx127x_reg_write(data->spidevice, SX127X_REG_LORA_INVERTIQ, reg);
-    if(ret < 0)
-    {
-        goto error;
-    }
-
-error:
-    
-    return ret;
 }
 
 static int sx127x_setinvertiq(struct sx127x *data, bool invert){
     int ret = 0;
     
 	dev_warn(data->chardevice, "setting invertiq to %d\n", invert);
-    ret = SX127XSetInvertIQ(data, invert);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    data->cfg.invertiq = invert;
+
 error:
     
 	return ret;
-}
-
-int SX127XSetCrc(struct sx127x *data, bool crc)
-{
-    int ret = 0;
-    u8 reg;
-
-    ret = sx127x_reg_read(data->spidevice, SX127X_REG_LORA_MODEMCONFIG2, &reg);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    
-	if(crc)
-		reg |= SX127X_REG_LORA_MODEMCONFIG2_RXPAYLOADCRCON;
-	else
-		reg &= ~SX127X_REG_LORA_MODEMCONFIG2_RXPAYLOADCRCON;
-	ret = sx127x_reg_write(data->spidevice, SX127X_REG_LORA_MODEMCONFIG2, reg);
-    if(ret < 0)
-    {
-        goto error;
-    }
-
-error:
-
-    return ret;
 }
 
 static int sx127x_setcrc(struct sx127x *data, bool crc){
@@ -2275,12 +1758,6 @@ static int sx127x_setcrc(struct sx127x *data, bool crc){
     
 	dev_warn(data->chardevice, "setting crc to %d\n", crc);
 
-    ret = SX127XSetCrc(data, crc);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    data->cfg.crc = crc;
 error:
     
 	return ret;
@@ -2290,7 +1767,7 @@ static ssize_t sx127x_opmode_store(struct device *dev, struct device_attribute *
 			 const char *buf, size_t count){
 	struct sx127x *data = dev_get_drvdata(dev);
 	int idx;
-	enum sx127x_opmode mode;
+	u8 mode;
 
 	idx = sx127x_indexofstring(buf, opmodestr, ARRAY_SIZE(opmodestr));
 	if(idx == -1){
@@ -2307,112 +1784,14 @@ out:
 
 static DEVICE_ATTR(opmode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_opmode_show, sx127x_opmode_store);
 
-int SX127XGetFreq(struct sx127x *data, u32 *freq)
-{
-    int ret = 0;
-    u8 msb, mld, lsb;
-	u32 frf;
-	
-
-    mutex_lock(&data->mutex);
-	ret = sx127x_reg_read(data->spidevice, SX127X_REG_FRFMSB, &msb);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    
-	ret = sx127x_reg_read(data->spidevice, SX127X_REG_FRFMLD, &mld);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    
-	ret = sx127x_reg_read(data->spidevice, SX127X_REG_FRFLSB, &lsb);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    
-	frf = (msb << 16) | (mld << 8) | lsb;
-	freq = ((u64)data->fosc * frf) / 524288;
-	mutex_unlock(&data->mutex);
-
-error:
-
-    return ret;
-}
-
 static ssize_t sx127x_carrierfrequency_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
     int ret = 0;
     u32 freq = 0;
 	struct sx127x *data = dev_get_drvdata(dev);
 
-    ret = SX127XGetFreq(data, &freq);
-	if(ret < 0)
-    {
-        goto error;
-    }
     return sprintf(buf, "%u\n", freq);
 
-error:
-
-    return ret;
-}
-
-int Sx127XSetFreq(struct sx127x *data, u32 freq)
-{
-    int ret = 0;
-    u8 opmode, newopmode;
-    u64 freq_temp = 0;
-    u32 reg = 0;
-    
-	ret = sx127x_reg_read(data->spidevice, SX127X_REG_OPMODE, &opmode);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    
-	newopmode = opmode & ~SX127X_REG_OPMODE_LOWFREQUENCYMODEON;
-	if(freq < 700000000){
-		newopmode |= SX127X_REG_OPMODE_LOWFREQUENCYMODEON;
-	}
-	if(newopmode != opmode){
-		dev_warn(data->chardevice, "toggling LF/HF bit\n");
-		ret = sx127x_reg_write(data->spidevice, SX127X_REG_OPMODE, newopmode);
-        if(ret < 0)
-        {
-            goto error;
-        }
-	}
-
-	
-	freq_temp = freq * 524288;
-
-	do_div(freq_temp, data->fosc);
-    reg = (u32)freq_temp;
-	ret = sx127x_reg_write24(data->spidevice, SX127X_REG_FRFMSB, reg);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    
-error:
-    
-	return ret;
-}
-    
-static int sx127x_setcarrierfrequency(struct sx127x *data, u32 freq){
-    int ret = 0;
-
-    dev_warn(data->chardevice, "setting carrier frequency to %llu\n", freq);
-
-    ret = Sx127XSetFreq(data, freq);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    data->cfg.freq = freq;
 error:
 
     return ret;
@@ -2426,10 +1805,8 @@ static ssize_t sx127x_carrierfrequency_store(struct device *dev, struct device_a
 	if(kstrtou32(buf, 10, &freq)){
 		goto out;
 	}
-	mutex_lock(&data->mutex);
-	sx127x_setcarrierfrequency(data, freq);
-	mutex_unlock(&data->mutex);
-	out:
+
+out:
 	return count;
 }
 
@@ -2442,67 +1819,20 @@ static ssize_t sx127x_rssi_show(struct device *child, struct device_attribute *a
 
 static DEVICE_ATTR(rssi, S_IRUSR | S_IRGRP | S_IROTH, sx127x_rssi_show, NULL);
 
-int SX127XGetSF(struct sx127x *data, int *sf)
-{
-    int ret= 0;
-    u8 config2;
-    
-    sx127x_reg_read(data->spidevice, SX127X_REG_LORA_MODEMCONFIG2, &config2);
-	*sf = config2 >> SX127X_REG_LORA_MODEMCONFIG2_SPREADINGFACTOR_SHIFT;
-}
-
 static ssize_t sx127x_sf_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct sx127x *data = dev_get_drvdata(dev);
 	int sf = 0;
 	
-	mutex_lock(&data->mutex);
-	SX127XGetSF(data, &sf);
-	mutex_unlock(&data->mutex);
+
     return sprintf(buf, "%d\n", sf);
-}
-
-int SX127XSetSF(struct sx127x *data, unsigned sf)
-{
-    int ret = 0;
-	u8 r;
-	
-	// set the spreading factor
-	sx127x_reg_read(data->spidevice, SX127X_REG_LORA_MODEMCONFIG2, &r);
-	r &= ~SX127X_REG_LORA_MODEMCONFIG2_SPREADINGFACTOR;
-	r |= sf << SX127X_REG_LORA_MODEMCONFIG2_SPREADINGFACTOR_SHIFT;
-	sx127x_reg_write(data->spidevice, SX127X_REG_LORA_MODEMCONFIG2, r);
-
-	// set the detection optimization magic number depending on the spreading factor
-	sx127x_reg_read(data->spidevice, SX127X_REG_LORA_DETECTOPTIMIZATION, &r);
-	r &= ~SX127X_REG_LORA_DETECTOPTIMIZATION_DETECTIONOPTIMIZE;
-	if(sf == 6){
-		r |= SX127X_REG_LORA_DETECTOPTIMIZATION_DETECTIONOPTIMIZE_SF6;
-	}
-	else{
-		r |= SX127X_REG_LORA_DETECTOPTIMIZATION_DETECTIONOPTIMIZE_SF7SF12;
-	}
-	sx127x_reg_write(data->spidevice, SX127X_REG_LORA_DETECTOPTIMIZATION, r);
-
-	// set the low data rate bit
-	sx127x_reg_read(data->spidevice, SX127X_REG_LORA_MODEMCONFIG3, &r);
-	r |= SX127X_REG_LORA_MODEMCONFIG3_LOWDATARATEOPTIMIZE;
-	sx127x_reg_write(data->spidevice, SX127X_REG_LORA_MODEMCONFIG3, r);
-    
-	return ret;
-
 }
 
 static int sx127x_setsf(struct sx127x *data, unsigned sf){
     int ret = 0;
     
     dev_info(data->chardevice, "setting spreading factor to %u\n", sf);
-    ret = SX127XSetSF(data, sf);
-    if(ret < 0)
-    {
-        goto error;
-    }
-    data->cfg.sf = sf;
+    
 error:
     
     return ret;
@@ -2515,50 +1845,21 @@ static ssize_t sx127x_sf_store(struct device *dev, struct device_attribute *attr
 	if(kstrtoint(buf, 10, &sf)){
 		goto out;
 	}
-	mutex_lock(&data->mutex);
-	sx127x_setsf(data, sf);
-	mutex_unlock(&data->mutex);
-	out:
+
+out:
 	return count;
 }
 
 static DEVICE_ATTR(sf, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_sf_show, sx127x_sf_store);
 
-int SX127XGetBW(struct sx127x *data, unsigned *bandwidth)
-{
-    int ret =0;
-    u8 config1;
-	int bw;
-    
-	sx127x_reg_read(data->spidevice, SX127X_REG_LORA_MODEMCONFIG1, &config1);
-	bw = config1 >> SX127X_REG_LORA_MODEMCONFIG1_BW_SHIFT;
-	
-    
-    return ret;
-}
-
 static ssize_t sx127x_bw_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
     int ret = 0;
-    int bandwidth = 0;
-	struct sx127x *data = dev_get_drvdata(dev);
 
-
-	mutex_lock(&data->mutex);
-    ret = SX127XGetBW(data, &bandwidth);
-    if(bandwidth > SX127X_REG_LORA_MODEMCONFIG1_BW_MAX){
-        ret = sprintf(buf, "invalid\n");
-    }
-    else {
-        ret = sprintf(buf, "%d\n", bwmap[bandwidth]);
-    }
-
-	mutex_unlock(&data->mutex);
 	return ret;
 }
 
-static ssize_t sx127x_bw_store(struct device *dev, struct device_attribute *attr,
-			 const char *buf, size_t count){
+static ssize_t sx127x_bw_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count){
 	//struct sx127x *data = dev_get_drvdata(dev);
 	return count;
 }
@@ -2567,41 +1868,11 @@ static DEVICE_ATTR(bw, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_bw_show, sx
 
 static char* crmap[] = { NULL, "4/5", "4/6", "4/7", "4/8" };
 
-int SX127XGetCodingRate(struct sx127x *data, unsigned *codingrate)
-{
-    int ret = 0;
-    u8 config1;
-
-    ret = sx127x_reg_read(data->spidevice, SX127X_REG_LORA_MODEMCONFIG1, &config1);
-	*codingrate = (config1 & SX127X_REG_LORA_MODEMCONFIG1_CODINGRATE) >> SX127X_REG_LORA_MODEMCONFIG1_CODINGRATE_SHIFT;
-
-    return ret;
-}
-
 static ssize_t sx127x_codingrate_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
+    int ret = 0;
 	struct sx127x *data = dev_get_drvdata(dev);
 	
-	int cr, ret;
-
-	mutex_lock(&data->mutex);
-	ret = SX127XGetCodingRate(data, &cr);
-	if(cr < SX127X_REG_LORA_MODEMCONFIG1_CODINGRATE_MIN ||
-			cr > SX127X_REG_LORA_MODEMCONFIG1_CODINGRATE_MAX){
-		ret = sprintf(buf, "invalid\n");
-	}
-	else {
-		ret = sprintf(buf, "%s\n", crmap[cr]);
-	}
-	mutex_unlock(&data->mutex);
-    return ret;
-}
-
-int SX127XSetCodingRate(struct sx127x *data, unsigned codingrate)
-{
-    int ret = 0;
-
-error:
 
     return ret;
 }
@@ -2614,28 +1885,12 @@ static ssize_t sx127x_codingrate_store(struct device *dev, struct device_attribu
 
 static DEVICE_ATTR(codingrate, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_codingrate_show, sx127x_codingrate_store);
 
-int SX127XGetImplicitHeader(struct sx127x *data, unsigned *implicitheader)
-{
-    int ret = 0;
-    u8 config1;
-
-    ret = sx127x_reg_read(data->spidevice, SX127X_REG_LORA_MODEMCONFIG1, &config1);
-	*implicitheader = config1 & SX127X_REG_LORA_MODEMCONFIG1_IMPLICITHEADERMODEON;
-
-    return ret;
-}
-
 static ssize_t sx127x_implicitheadermodeon_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
     int ret = 0;
 	struct sx127x *data = dev_get_drvdata(dev);
 	
-	int hdrmodeon;
-
-	mutex_lock(&data->mutex);
-    ret = SX127XGetImplicitHeader(data, &hdrmodeon);
-	mutex_unlock(&data->mutex);
-    return sprintf(buf, "%d\n", hdrmodeon);
+    return sprintf(buf, "%d\n", 0);
 }
 
 int SX127XSetImplicitHeader(struct sx127x *data, unsigned *implicitheader)
@@ -2652,59 +1907,21 @@ static ssize_t sx127x_implicitheadermodeon_store(struct device *dev, struct devi
 
 static DEVICE_ATTR(implicitheadermodeon, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_implicitheadermodeon_show, sx127x_implicitheadermodeon_store);
 
-int SX127XGetPaoutput(struct sx127x *data, unsigned *idx)
-{
-    int ret = 0;
-    u8 paconfig;
-
-    sx127x_reg_read(data->spidevice, SX127X_REG_PACONFIG, &paconfig);
-	*idx = (paconfig & SX127X_REG_PACONFIG_PASELECT) ? 1 : 0;
-
-    return ret;
-}
 
 static ssize_t sx127x_paoutput_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
     int ret = 0;
     int idx;
-	struct sx127x *data = dev_get_drvdata(dev);
 
-	mutex_lock(&data->mutex);
-	ret = SX127XGetPaoutput(data, &idx);
-	mutex_unlock(&data->mutex);
-    return sprintf(buf, "%s\n", paoutput[idx]);
+
+    return sprintf(buf, "%s\n", idx);
 }
 
-static int SX127XSetPaoutput(struct sx127x *data, enum sx127x_pa pa){
-	int ret = 0;
-	u8 paconfig;
-    
-	sx127x_reg_read(data->spidevice, SX127X_REG_PACONFIG, &paconfig);
-	switch(pa){
-		case SX127X_PA_RFO:
-			paconfig &= ~SX127X_REG_PACONFIG_PASELECT;
-			break;
-		case SX127X_PA_PABOOST:
-			paconfig |= SX127X_REG_PACONFIG_PASELECT;
-			break;
-	}
-	sx127x_reg_write(data->spidevice, SX127X_REG_PACONFIG, paconfig);
-    
-	return ret;
-}
+
 
 static int sx127x_setpaoutput(struct sx127x *data, enum sx127x_pa pa){
 	int ret = 0;
 
-    ret = SX127XSetPaoutput(data, pa);
-	switch(pa){
-		case SX127X_PA_RFO:
-			data->cfg.pa = SX127X_PA_RFO;
-			break;
-		case SX127X_PA_PABOOST:
-			data->cfg.pa = SX127X_PA_PABOOST;
-			break;
-	}
     
 	return ret;
 }
@@ -2717,30 +1934,13 @@ static ssize_t sx127x_paoutput_store(struct device *dev, struct device_attribute
 	int idx = sx127x_indexofstring(buf, paoutput, ARRAY_SIZE(paoutput));
 	if(idx == -1)
 		goto out;
-	mutex_lock(&data->mutex);
-	sx127x_setpaoutput(data, idx);
-	mutex_unlock(&data->mutex);
+
 out:
 	return count;
 }
 
 static DEVICE_ATTR(paoutput, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_paoutput_show, sx127x_paoutput_store);
 
-int SX127XGetOutputPower(struct sx127x *data, int *outputpower)
-{
-    int ret = 0;
-    u8 paconfig;
-    int maxoutputpower = 17;
-	
-
-    sx127x_reg_read(data->spidevice, SX127X_REG_PACONFIG, &paconfig);
-	if(!(paconfig & SX127X_REG_PACONFIG_PASELECT)){
-		maxoutputpower = ((paconfig & SX127X_REG_PACONFIG_MAXPOWER) >> SX127X_REG_PACONFIG_MAXPOWER_SHIFT);
-	}
-	*outputpower = maxoutputpower - (15 - (paconfig & SX127X_REG_PACONFIG_OUTPUTPOWER));
-
-    return ret;
-}
 
 static ssize_t sx127x_outputpower_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -2748,142 +1948,21 @@ static ssize_t sx127x_outputpower_show(struct device *dev, struct device_attribu
 	struct sx127x *data = dev_get_drvdata(dev);
 	int outputpower;
 
-	mutex_lock(&data->mutex);
-	SX127XGetOutputPower(data, &outputpower);
-	mutex_unlock(&data->mutex);
     return sprintf(buf, "%d\n", outputpower);
 }
 
-int SX127XSetOutputPower(struct sx127x *data, int outputpower)
-{
-    int ret = 0;
-
-    u8 paconfig;
-	ret = sx127x_reg_read(data->spidevice, SX127X_REG_PACONFIG, &paconfig);
-	ret = sx127x_reg_write(data->spidevice, SX127X_REG_PACONFIG, paconfig);
-
-    return ret;
-}
 
 static ssize_t sx127x_outputpower_store(struct device *dev, struct device_attribute *attr,
 			 const char *buf, size_t count){
     int ret = 0;
 	struct sx127x *data = dev_get_drvdata(dev);
 	//int idx = sx127x_indexofstring(buf, paoutput, ARRAY_SIZE(paoutput));
-	ret = SX127XSetOutputPower(data, 0);
+	
 	return count;
 }
 
 static DEVICE_ATTR(outputpower, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
 		sx127x_outputpower_show, sx127x_outputpower_store);
-
-
-static irqreturn_t sx127x_top_irq_handler(int irq, void *dev_id)
-{
-	//struct sx127x *data = dev_id;
-    disable_irq_nosync(irq);
-	//schedule_work(&data->irq_work);
-	return IRQ_HANDLED;
-}
-
-static irqreturn_t sx127x_bottem_irq_thread(int irq, void *dev_id)
-{
-	//struct sx127x *data = container_of(work, struct sx127x, irq_work);
-	struct sx127x *data = dev_id;
-	u8 irqflags, buf[128], len, snr, rssi;
-	u32 fei;
-	struct sx127x_pkt pkt;
-	mutex_lock(&data->mutex);
-	sx127x_reg_read(data->spidevice, SX127X_REG_LORA_IRQFLAGS, &irqflags);
-	if(irqflags & SX127X_REG_LORA_IRQFLAGS_RXDONE){
-		dev_warn(data->chardevice, "reading packet\n");
-		memset(&pkt, 0, sizeof(pkt));
-
-		sx127x_fifo_readpkt(data->spidevice, buf, &len);
-		sx127x_reg_read(data->spidevice, SX127X_REG_LORA_PKTSNRVALUE, &snr);
-        if( SX1276.Settings.LoRaPacketHandler.SnrValue & 0x80 ) // The SNR sign bit is 1
-        {
-            // Invert and divide by 4
-            snr = ( ( ~SX1276.Settings.LoRaPacketHandler.SnrValue + 1 ) & 0xFF ) >> 2;
-            snr = -snr;
-        }
-        else
-        {
-            // Divide by 4
-            snr = ( SX1276.Settings.LoRaPacketHandler.SnrValue & 0xFF ) >> 2;
-        }
-		sx127x_reg_read(data->spidevice, SX127X_REG_LORA_PKTRSSIVALUE, &rssi);
-		sx127x_reg_read24(data->spidevice, SX127X_REG_LORA_FEIMSB, &fei);
-		if( snr < 0 )
-        {
-            if( SX1276.Settings.Channel > RF_MID_BAND_THRESH )
-            {
-                SX1276.Settings.LoRaPacketHandler.RssiValue = RSSI_OFFSET_HF + rssi + ( rssi >> 4 ) +
-                                                              snr;
-            }
-            else
-            {
-                SX1276.Settings.LoRaPacketHandler.RssiValue = RSSI_OFFSET_LF + rssi + ( rssi >> 4 ) +
-                                                              snr;
-            }
-        }
-        else
-        {
-            if( SX1276.Settings.Channel > RF_MID_BAND_THRESH )
-            {
-                SX1276.Settings.LoRaPacketHandler.RssiValue = RSSI_OFFSET_HF + rssi + ( rssi >> 4 );
-            }
-            else
-            {
-                SX1276.Settings.LoRaPacketHandler.RssiValue = RSSI_OFFSET_LF + rssi + ( rssi >> 4 );
-            }
-        }
-		pkt.hdrlen = sizeof(pkt);
-		pkt.payloadlen = len;
-		pkt.len = pkt.hdrlen + pkt.payloadlen;
-		pkt.snr = (__s16)(snr << 2) / 4 ;
-		pkt.rssi = -157 + rssi; //TODO fix this for the LF port
-
-		if(irqflags & SX127X_REG_LORA_IRQFLAGS_PAYLOADCRCERROR){
-			dev_warn(data->chardevice, "CRC Error for received payload\n");
-			pkt.crcfail = 1;
-		}
-
-		kfifo_in(&data->out, &pkt, sizeof(pkt));
-		kfifo_in(&data->out, buf, len);
-		wake_up(&data->readwq);
-	}
-	else if(irqflags & SX127X_REG_LORA_IRQFLAGS_TXDONE){
-		if(data->gpio_txen){
-			gpiod_set_value(data->gpio_txen, 0);
-		}
-		dev_warn(data->chardevice, "transmitted packet\n");
-		/* after tx the chip goes back to standby so restore the user selected mode if it wasn't standby */
-		if(data->opmode != SX127X_OPMODE_STANDBY){
-			dev_info(data->chardevice, "restoring opmode\n");
-			sx127x_setopmode(data, data->opmode, false);
-		}
-		data->transmitted = 1;
-		wake_up(&data->writewq);
-	}
-	else if(irqflags & SX127X_REG_LORA_IRQFLAGS_CADDONE){
-		if(irqflags & SX127X_REG_LORA_IRQFLAGS_CADDETECTED){
-			dev_info(data->chardevice, "CAD done, detected activity\n");
-		}
-		else {
-			dev_info(data->chardevice, "CAD done, nothing detected\n");
-		}
-	}
-	else {
-		dev_err(&data->spidevice->dev, "unhandled interrupt state %02x\n", (unsigned) irqflags);
-	}
-	sx127x_reg_write(data->spidevice, SX127X_REG_LORA_IRQFLAGS, 0xff);
-	mutex_unlock(&data->mutex);
-    enable_irq(irq);
-
-    return IRQ_HANDLED;
-}
-
 
 static int drv_open(struct inode *inode, struct file *file)
 {
@@ -2924,6 +2003,7 @@ static int drv_open(struct inode *inode, struct file *file)
         goto err_open;
     }
 	mutex_unlock(&data->mutex);
+    
 
 	ret = sx127x_init(data);
 	
@@ -2962,7 +2042,9 @@ static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count
 	u8 kbuf[256];
 	dev_info(&data->spidevice->dev, "char device write; %d\n", count);
 
-	sx127x_set_txconfig();
+	sx127x_set_txconfig(data, data->cfg.LoRa.tChannel, data->cfg.LoRa.Power, data->cfg.LoRa.tBandwidth, 
+                              data->cfg.LoRa.tDatarate, data->cfg.LoRa.tCoderate, data->cfg.LoRa.PreambleLen);
+    
 	for(offset = 0; offset < count; offset += maxpkt){
 		packetsz = min((count - offset), maxpkt);
 		mutex_lock(&data->mutex);
@@ -2972,53 +2054,12 @@ static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count
             goto error;
         }
 
-		if( SX1276.Settings.LoRa.IqInverted == true )
-        {
-        	sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg) ;
-            sx127x_reg_write(spi, REG_LR_INVERTIQ, ( ( reg& RFLR_INVERTIQ_TX_MASK & RFLR_INVERTIQ_RX_MASK ) | RFLR_INVERTIQ_RX_OFF | RFLR_INVERTIQ_TX_ON ) );
-            sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_ON );
-        }
-        else
-        {
-        	sx127x_reg_read(spi, REG_LR_INVERTIQ, &reg);
-            sx127x_reg_write(spi, REG_LR_INVERTIQ, ( ( reg & RFLR_INVERTIQ_TX_MASK & RFLR_INVERTIQ_RX_MASK ) | RFLR_INVERTIQ_RX_OFF | RFLR_INVERTIQ_TX_OFF ) );
-            sx127x_reg_write(spi, REG_LR_INVERTIQ2, RFLR_INVERTIQ2_OFF );
-        }
+        sx127x_setopmode(data, SX127X_OPMODE_STANDBY, false);
+	
+	    sx127x_fifo_writepkt(data->spidevice, kbuf, packetsz);
 		
-		sx127x_setopmode(data, SX127X_OPMODE_STANDBY, false);
-		
-		sx127x_fifo_writepkt(data->spidevice, kbuf, packetsz);
-
-		if( SX1276.Settings.LoRa.FreqHopOn == true )
-        {
-            sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
-                                              RFLR_IRQFLAGS_RXDONE |
-                                              RFLR_IRQFLAGS_PAYLOADCRCERROR |
-                                              RFLR_IRQFLAGS_VALIDHEADER |
-                                              //RFLR_IRQFLAGS_TXDONE |
-                                              RFLR_IRQFLAGS_CADDONE |
-                                              //RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
-                                              RFLR_IRQFLAGS_CADDETECTED );
-
-            // DIO0=TxDone, DIO2=FhssChangeChannel
-            SX1276Read(spi, REG_DIOMAPPING1, &reg);
-            sx127x_reg_write(spi, REG_DIOMAPPING1, (reg & RFLR_DIOMAPPING1_DIO0_MASK & RFLR_DIOMAPPING1_DIO2_MASK ) | RFLR_DIOMAPPING1_DIO0_01 | RFLR_DIOMAPPING1_DIO2_00 );
-        }
-        else
-        {
-            sx127x_reg_write(spi, REG_LR_IRQFLAGSMASK, RFLR_IRQFLAGS_RXTIMEOUT |
-                                              RFLR_IRQFLAGS_RXDONE |
-                                              RFLR_IRQFLAGS_PAYLOADCRCERROR |
-                                              RFLR_IRQFLAGS_VALIDHEADER |
-                                              //RFLR_IRQFLAGS_TXDONE |
-                                              RFLR_IRQFLAGS_CADDONE |
-                                              RFLR_IRQFLAGS_FHSSCHANGEDCHANNEL |
-                                              RFLR_IRQFLAGS_CADDETECTED );
-
-            // DIO0=TxDone
-            sx127x_reg_write(spi, REG_DIOMAPPING1, ( SX1276Read( REG_DIOMAPPING1 ) & RFLR_DIOMAPPING1_DIO0_MASK ) | RFLR_DIOMAPPING1_DIO0_01 );
-        }
 		data->transmitted = 0;
+        
 		sx127x_setopmode(data, SX127X_OPMODE_TX, false);
 		mutex_unlock(&data->mutex);
 		wait_event_interruptible_timeout(data->writewq, data->transmitted, 60 * HZ);
@@ -3026,7 +2067,7 @@ static ssize_t drv_write(struct file *filp, const char __user *buf, size_t count
 
 	//rx begin
 	mutex_lock(&data->mutex);
-	sx127x_start();
+	sx127x_start_rx(data);
 	mutex_unlock(&data->mutex);
 
 	return count;
@@ -3262,6 +2303,11 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			data->cfg.LoRa.PreambleLen = val;
 			break;
 		}
+        case LORA_IOC_WR_WORK:
+        {
+            sx127x_start_rx(data);
+            break;
+        }
 		default:
 			ret = -EINVAL;
 			break;
