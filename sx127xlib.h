@@ -89,36 +89,54 @@ typedef struct _Rx_Signal_Param_st_
 }Rx_Signal_Param_st, *Rx_Signal_Param_st_ptr;
 
 
-struct sx127x_cfg {
-    enum sx127x_modulation modulation;
-    u32 freq;
-    u8 sf;
-    enum sx127x_pa pa;
-    u8 bandwidth;
-    u8 syncword;
-    bool crc;
-    bool invertiq;  
-};
 
 /* Read or Write modulation */
-#define LORA_IOC_RD_MODULATION			_IOR(SX127X_IOC_MAGIC, 1, uint8_t)
-#define LORA_IOC_WR_MODULATION			_IOW(SX127X_IOC_MAGIC, 1, uint8_t)
+#define LORA_IOC_RD_MODEM				_IOR(SX127X_IOC_MAGIC, 1, uint8_t)
+#define LORA_IOC_WR_MODEM				_IOW(SX127X_IOC_MAGIC, 1, uint8_t)
 
-/* Read / Write carrie frequency */
-#define LORA_IOC_RD_CARRIERFRE		    _IOR(SX127X_IOC_MAGIC, 2, uint64_t)
-#define LORA_IOC_WR_CARRIERFRE		    _IOW(SX127X_IOC_MAGIC, 2, uint64_t)
+/* Read / Write tx carrie frequency */
+#define LORA_IOC_RD_TXFRE		    	_IOR(SX127X_IOC_MAGIC, 2, uint32_t)
+#define LORA_IOC_WR_TXFRE		    	_IOW(SX127X_IOC_MAGIC, 2, uint32_t)
+
+#define LORA_IOC_RD_RXFRE		    	_IOR(SX127X_IOC_MAGIC, 3, uint32_t)
+#define LORA_IOC_WR_RXFRE		    	_IOW(SX127X_IOC_MAGIC, 3, uint32_t)
+
+#define LORA_IOC_RD_TXBW		    	_IOR(SX127X_IOC_MAGIC, 4, uint32_t)
+#define LORA_IOC_WR_TXBW		    	_IOW(SX127X_IOC_MAGIC, 4, uint32_t)
+
+/* Read / Write bandwidth */
+#define LORA_IOC_RD_RXBW		    	_IOR(SX127X_IOC_MAGIC, 5, uint32_t)
+#define LORA_IOC_WR_RXBW		    	_IOW(SX127X_IOC_MAGIC, 5, uint32_t)
+
+#define LORA_IOC_RD_TXSF		    	_IOR(SX127X_IOC_MAGIC, 6, uint32_t)
+#define LORA_IOC_WR_TXSF		    	_IOW(SX127X_IOC_MAGIC, 6, uint32_t)
+
+#define LORA_IOC_RD_RXSF		    	_IOR(SX127X_IOC_MAGIC, 7, uint32_t)
+#define LORA_IOC_WR_RXSF		    	_IOW(SX127X_IOC_MAGIC, 7, uint32_t)
+
+#define LORA_IOC_RD_TXCR		    	_IOR(SX127X_IOC_MAGIC, 8, uint8_t)
+#define LORA_IOC_WR_TXCR		    	_IOW(SX127X_IOC_MAGIC, 8, uint8_t)
+
+#define LORA_IOC_RD_RXCR		    	_IOR(SX127X_IOC_MAGIC, 9, uint8_t)
+#define LORA_IOC_WR_RXCR		    	_IOW(SX127X_IOC_MAGIC, 9, uint8_t)
+
 
 /* Read / Write spreading factoe */
-#define LORA_IOC_RD_SF	                _IOR(SX127X_IOC_MAGIC, 3, uint8_t)
-#define LORA_IOC_WR_SF	                _IOW(SX127X_IOC_MAGIC, 3, uint8_t)
+#define LORA_IOC_RD_POWER	            _IOR(SX127X_IOC_MAGIC, 10, int8_t)
+#define LORA_IOC_WR_POWER	            _IOW(SX127X_IOC_MAGIC, 10, int8_t)
+
+//FSK mode ioctl cmd
+#define LORA_IOC_RD_FDEV	            _IOR(SX127X_IOC_MAGIC, 11, uint32_t)
+#define LORA_IOC_WR_FDEV	            _IOW(SX127X_IOC_MAGIC, 11, uint32_t)
+
+#define LORA_IOC_RD_PREAMBLELEN         _IOR(SX127X_IOC_MAGIC, 12, uint16_t)
+#define LORA_IOC_WR_PREAMBLELEN         _IOW(SX127X_IOC_MAGIC, 12, uint16_t)
+
 
 /* Read / Write operation mode */
 #define LORA_IOC_RD_PAOUTPUT	        _IOR(SX127X_IOC_MAGIC, 4, uint8_t)
 #define LORA_IOC_WR_PAOUTPUT          	_IOW(SX127X_IOC_MAGIC, 4, uint8_t)
 
-/* Read / Write bandwidth */
-#define LORA_IOC_RD_BANDWIDTH           _IOR(SX127X_IOC_MAGIC, 5, uint8_t)
-#define LORA_IOC_WR_BANDWIDTH           _IOW(SX127X_IOC_MAGIC, 5, uint8_t)
 
 /* Read / Write sync word*/
 #define LORA_IOC_RD_SYNCWORD            _IOR(SX127X_IOC_MAGIC, 6, uint8_t)
