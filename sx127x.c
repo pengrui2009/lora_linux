@@ -379,6 +379,7 @@ static irqreturn_t sx127x_dio2_top_irq_handler(int irq, void *dev_id)
 static irqreturn_t sx127x_dio2_bottem_irq_thread(int irq, void *dev_id)
 {
     printk(KERN_ERR "DIO2 IRQ\n");
+    enable_irq(irq);
     return IRQ_HANDLED;
 }
 
@@ -393,7 +394,32 @@ static irqreturn_t sx127x_dio3_top_irq_handler(int irq, void *dev_id)
 
 static irqreturn_t sx127x_dio3_bottem_irq_thread(int irq, void *dev_id)
 {
-    printk(KERN_ERR "DIO3 IRQ\n");
+    u32 fei;
+    u8 irqflags, buf[128], len, snr, rssi;
+    struct sx127x *data = dev_id;
+    struct spi_device *spi = to_spi_device(data->dev);
+    struct sx127x_pkt pkt;
+    
+    mutex_lock(&data->mutex);
+    sx127x_reg_read(spi, REG_LR_IRQFLAGS, &irqflags);
+    if(irqflags & RFLR_IRQFLAGS_CADDONE){
+        if(irqflags & RFLR_IRQFLAGS_CADDETECTED){
+            dev_info(data->dev, "CAD done, detected activity\n");
+			data->caddone = 2;
+			wake_up(&data->readwq);
+        }
+        else {
+            dev_info(data->dev, "CAD done, nothing detected\n");
+			data->caddone = 1;
+			wake_up(&data->readwq);
+        }
+    }
+    else {
+        dev_err(data->dev, "unhandled interrupt state %02x\n", (unsigned) irqflags);
+    }
+    sx127x_reg_write(spi, REG_LR_IRQFLAGS, 0xff);
+    mutex_unlock(&data->mutex);
+    enable_irq(irq);
     return IRQ_HANDLED;
 }
 
@@ -409,6 +435,7 @@ static irqreturn_t sx127x_dio4_top_irq_handler(int irq, void *dev_id)
 static irqreturn_t sx127x_dio4_bottem_irq_thread(int irq, void *dev_id)
 {
     printk(KERN_ERR "DIO4 IRQ\n");
+    enable_irq(irq);
     return IRQ_HANDLED;
 }
 
@@ -1160,13 +1187,13 @@ int sx127x_init(struct sx127x *sx127x_ptr)
 
     sx127x_set_opmode(sx127x_ptr, RF_OPMODE_SLEEP);
 
-    sx127x_irq_init(sx127x_ptr);
-
     for(i = 0; i < sizeof(RadioRegsInit) / sizeof(RadioRegisters_t); i++)
     {
         sx127x_set_modem(sx127x_ptr, RadioRegsInit[i].Modem);
         sx127x_reg_write(spi, RadioRegsInit[i].Addr, RadioRegsInit[i].Value);
     }
+
+    sx127x_irq_init(sx127x_ptr);
 
     sx127x_set_modem(sx127x_ptr, MODEM_LORA);
 
@@ -1621,6 +1648,7 @@ error:
 
     return ret;
 }
+
 
 static int sx127x_indexofstring(const char* str, const char** options, unsigned noptions){
     int i;
@@ -2093,6 +2121,55 @@ static int drv_release(struct inode *inode, struct file *filp)
     return 0;
 }
 
+#define CAD_MASK			1
+#define CAD_NODETECTED		0
+#define CAD_DETECTED 		1
+//#define CAD_SET_FLAG(val, flag)	(val | CAD_DETECTED)
+static sx127x_read_snr_rssi(struct sx127x *sx127x_ptr, u32 freq, u8 *snr, u8 *rssi)
+{
+	int ret = 0;
+        u8 regsnr = 0;
+        u8 regrssi = 0;
+	struct spi_device *spi = to_spi_device(sx127x_ptr->dev);
+	
+	sx127x_reg_read(spi, REG_LR_PKTSNRVALUE, &regsnr);
+	if(regsnr & 0x80 ) // The SNR sign bit is 1
+	{
+		// Invert and divide by 4
+		*snr = ( ( ~regsnr + 1 ) & 0xFF ) >> 2;
+		*snr = -regsnr;
+	}
+	else
+	{
+		// Divide by 4
+		*snr = ( regsnr & 0xFF ) >> 2;
+	}
+	sx127x_reg_read(spi, REG_LR_PKTRSSIVALUE, &regrssi);
+	if(*snr < 0)
+	{
+		if(freq > RF_MID_BAND_THRESH)
+		{
+			*rssi = RSSI_OFFSET_HF + regrssi + (regrssi >> 4) + *snr;
+		}
+		else
+		{
+			*rssi = RSSI_OFFSET_LF + regrssi + (regrssi >> 4) + *snr;
+		}
+	}
+	else
+	{
+		if(freq > RF_MID_BAND_THRESH)
+		{
+			*rssi = RSSI_OFFSET_HF + regrssi + (regrssi >> 4);
+		}
+		else
+		{
+			*rssi = RSSI_OFFSET_LF + regrssi + (regrssi >> 4);
+		}
+	}
+
+	return ret;
+}
 static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
     struct sx127x *data = filp->private_data;
@@ -2262,6 +2339,57 @@ static long drv_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             u16 val = (u16)arg;
 
             data->cfg.LoRa.PreambleLen = val;
+            break;
+        }
+        case LORA_IOC_WR_CAD:
+        {
+			//I think we need set freq first
+            sx127x_start_cad(data);
+
+            data->caddone = 0;
+
+            wait_event_interruptible_timeout(data->cadwq, data->caddone, 1 * HZ);
+            switch(data->caddone)
+            {
+            case 0:
+			{
+				//timeout;
+				ret = -ETIMEDOUT;
+				
+				break;
+        	}
+			case 1:
+			{
+				//detected nothing
+				
+				u8 snr = 0;
+				u8 rssi = 0;
+				u32 freq = data->cfg.LoRa.tChannel;
+				sx127x_read_snr_rssi(data, freq, &snr, &rssi);
+				ret = (snr << 16) | (rssi << 8) | CAD_NODETECTED;
+				
+				break;
+			}
+			case 2:
+			{
+				//detected 
+				u8 snr = 0;
+				u8 rssi = 0;
+				u32 freq = data->cfg.LoRa.tChannel;
+				sx127x_read_snr_rssi(data, freq, &snr, &rssi);
+				ret = (snr << 16) | (rssi << 8) | CAD_DETECTED;
+				
+				break;
+			}
+			default:
+			{
+				//inval 
+				ret = -EINVAL;
+				
+				break;
+			}
+			}
+            sx127x_start_rx(data);
             break;
         }
         case LORA_IOC_WR_WORK:

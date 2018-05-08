@@ -138,7 +138,6 @@ typedef struct _Rx_Signal_Param_st_
 #define LORA_IOC_RD_PREAMBLELEN         _IOR(SX127X_IOC_MAGIC, 12, uint16_t)
 #define LORA_IOC_WR_PREAMBLELEN         _IOW(SX127X_IOC_MAGIC, 12, uint16_t)
 
-
 /* Read / Write operation mode */
 #define LORA_IOC_RD_PAOUTPUT            _IOR(SX127X_IOC_MAGIC, 13, uint8_t)
 #define LORA_IOC_WR_PAOUTPUT            _IOW(SX127X_IOC_MAGIC, 13, uint8_t)
@@ -148,5 +147,9 @@ typedef struct _Rx_Signal_Param_st_
 #define LORA_IOC_WR_OPMODE              _IOW(SX127X_IOC_MAGIC, 14, uint8_t)
 
 #define LORA_IOC_WR_WORK                _IOWR(SX127X_IOC_MAGIC, 15, uint8_t)
+//bit[16-24] : snr
+//bit[8-16] : rssi
+//bit[0] : {0:nothing detected  1: detected}
+#define LORA_IOC_WR_CAD                 _IOW(SX127X_IOC_MAGIC, 16, uint8_t)
 
 #endif

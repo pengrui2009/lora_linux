@@ -251,6 +251,9 @@ struct sx127x {
     /* rx */
     wait_queue_head_t readwq;
     struct kfifo out;
+	/* cad */
+    wait_queue_head_t cadwq;
+    int caddone;
 };
 
 #endif /* SX127X_H_ */

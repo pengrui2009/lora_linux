@@ -18,6 +18,7 @@ int main(void)
 
     write(fd, sendbuf, sizeof(sendbuf));
 
+    write(fd, sendbuf, sizeof(sendbuf));
 ERR_EXIT:
     close(fd);
     return result;
