@@ -3,7 +3,7 @@ INSTALLDIR := /mnt/hgfs/share/ko
 #CROSS_COMPILE := 
 
 #KERNELDIR := /home/linux/openwrt/gateway/linux_3.14/
-KERNELDIR := /home/linux/imx6/linux-3.14.52/
+KERNELDIR := /home/pengrui/my-imx6/02_source/imx-3.14.52_1.0.o_ga/kernel/linux-3.14.52-gateway
 PWD := $(shell pwd)
 
 obj-m := sx127x.o
@@ -12,8 +12,9 @@ obj-m := sx127x.o
 all:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 	#cp lora.ko $(INSTALLDIR)
+	cd test&&arm-linux-gnueabihf-gcc -o test_open test_open.c -I../
 	#cd test&&arm-linux-gnueabihf-gcc -o test_poll test_poll.c -I../
-	#cd test&&arm-linux-gnueabihf-gcc -o test_send test_send.c -I../
+	cd test&&arm-linux-gnueabihf-gcc -o test_send test_send.c -I../
 	#cd test&&arm-linux-gnueabihf-gcc -o test_cad test_cad.c -I../
 	#cp test/test_poll test/test_send test/test_cad $(INSTALLDIR)
 clean:
