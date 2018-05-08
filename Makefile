@@ -3,7 +3,7 @@ INSTALLDIR := /mnt/hgfs/share/ko
 #CROSS_COMPILE := 
 
 #KERNELDIR := /home/linux/openwrt/gateway/linux_3.14/
-KERNELDIR := /home/pengrui/data/kernel/linux-3.14.52/
+KERNELDIR := /home/linux/imx6/linux-3.14.52/
 PWD := $(shell pwd)
 
 obj-m := sx127x.o

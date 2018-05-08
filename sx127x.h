@@ -100,7 +100,6 @@ typedef enum
     RF_CAD,        //!< The radio is doing channel activity detection
 }RadioState_t;
 
-
 /*!
  * Radio FSK modem parameters
  */
@@ -185,9 +184,10 @@ typedef struct
  */
 struct sx127x_cfg 
 {
+	
     RadioState_t             State;
     RadioModems_t            Modem;
-    
+    enum sx127x_pa 			 pa;
     RadioFskSettings_t       Fsk;
     //RadioFskPacketHandler_t  FskPacketHandler;
     RadioLoRaSettings_t      LoRa;
@@ -234,7 +234,7 @@ struct sx127x {
 	//struct spi_device* spidevice;
 	
 	u32 fosc;
-	//enum sx127x_pa pa;
+	
     
 	struct mutex mutex;
 	struct list_head device_entry;
