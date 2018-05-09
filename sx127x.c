@@ -124,7 +124,7 @@ static struct class *drv_class;
 //static const char* invalid = "invalid";
 static const char* modstr[] = {"fsk", "lora"};
 static const char* opmodestr[] = {"sleep", "standby", "fstx", "tx", "fsrx", "rx", "rxcontinuous", "rxsingle", "cad"};
-//static unsigned bwmap[] = { 7800, 10400, 15600, 20800, 31250, 41700, 62500, 125000, 250000, 500000 };
+static unsigned bwmap[] = { 7800, 10400, 15600, 20800, 31250, 41700, 62500, 125000, 250000, 500000 };
 static const char* paoutput[] = {"rfo", "pa_boost"};
 
 
@@ -2107,31 +2107,48 @@ static ssize_t sx127x_carrierfrequency_show(struct device *dev, struct device_at
 
 static ssize_t sx127x_carrierfrequency_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-    u32 freq;
-
-    if(kstrtou32(buf, 10, &freq)){
+    u32 freq = 0;
+	struct sx127x *data = dev_get_drvdata(dev);
+    if(kstrtou32(buf, 10, &freq))
+	{
         goto out;
     }
-
+	
+	data->cfg.LoRa.tChannel = freq;
+	data->cfg.LoRa.rChannel = freq;
 out:
     return count;
 }
 
 static DEVICE_ATTR(carrierfrequency, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_carrierfrequency_show, sx127x_carrierfrequency_store);
 
-static ssize_t sx127x_rssi_show(struct device *child, struct device_attribute *attr, char *buf)
+static ssize_t sx127x_rssi_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-    return sprintf(buf, "%d\n", 0);
+	int ret = 0;
+	s16 rssi = 0;
+	u32 freq = 0;
+	struct sx127x *data = dev_get_drvdata(dev);
+	
+	freq = data->cfg.LoRa.tChannel;
+	ret = sx127x_read_rssi(data, freq, &rssi);
+	
+    return sprintf(buf, "%d\n", rssi);
 }
 
 static DEVICE_ATTR(rssi, S_IRUSR | S_IRGRP | S_IROTH, sx127x_rssi_show, NULL);
 
+static const char* sfmap[] = {"64", "128", "256", "512", "1024","2048", "4096"};
+
 static ssize_t sx127x_sf_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-    int sf = 0;
-    
+    int txsf = 0;
+	int rxsf = 0;
+    struct sx127x *data = dev_get_drvdata(dev);
 
-    return sprintf(buf, "%d\n", sf);
+	txsf = data->cfg.LoRa.tDatarate;
+	rxsf = data->cfg.LoRa.tDatarate;
+	
+    return sprintf(buf, "txsf:%schips/symbol rxsf:%schips/symbol\n", sfmap[txsf-6], sfmap[rxsf-6]);
 }
 #if 0
 static int sx127x_setsf(struct sx127x *data, unsigned sf){
@@ -2144,43 +2161,100 @@ static int sx127x_setsf(struct sx127x *data, unsigned sf){
 #endif
 static ssize_t sx127x_sf_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-    int sf;
-    if(kstrtoint(buf, 10, &sf)){
+	struct sx127x *data = dev_get_drvdata(dev);
+    int idx = sx127x_indexofstring(buf, sfmap, ARRAY_SIZE(sfmap));
+    if(idx == -1)
+	{
+        dev_warn(dev, "invalid spreading factor type\n");
         goto out;
     }
-
+	
+	data->cfg.LoRa.tDatarate = idx + 6;
+	data->cfg.LoRa.rDatarate = idx + 6;
+	
 out:
-    return count;
+	
+	return count;
 }
 
 static DEVICE_ATTR(sf, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_sf_show, sx127x_sf_store);
 
 static ssize_t sx127x_bw_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-    int ret = 0;
-
-    return ret;
+	struct sx127x *data = dev_get_drvdata(dev);
+    //int idx = sx127x_indexofstring(buf, modstr, ARRAY_SIZE(modstr));
+    //if(idx == -1){
+    //    dev_warn(dev, "invalid modulation type\n");
+    //    goto out;
+    //}
+    int tbandwidth  = 0;
+	int rbandwidth  = 0;
+	mutex_lock(&data->mutex);
+	tbandwidth = data->cfg.LoRa.tBandwidth;
+	rbandwidth = data->cfg.LoRa.rBandwidth;
+	mutex_unlock(&data->mutex);
+    return sprintf(buf, "txbw:%d rxbw:%d\n", bwmap[tbandwidth], bwmap[rbandwidth]);
 }
 
 static ssize_t sx127x_bw_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count){
-    //struct sx127x *data = dev_get_drvdata(dev);
+    struct sx127x *data = dev_get_drvdata(dev);
+	u32 bw = 0;
+	int i = 0;
+	
+	if(kstrtou32(buf, 10, &bw)){
+		goto out;
+	}
+	
+	for(i=0; i< sizeof(bwmap) / sizeof(bwmap[0]);i++)
+	{
+		if(bw == bwmap[i])
+			break;
+	}
+	
+	if(i == sizeof(bwmap) / sizeof(bwmap[0]))
+	{
+		dev_warn(dev, "invalid param type\n");
+		goto out;
+	}
+	
+	mutex_lock(&data->mutex);
+	data->cfg.LoRa.tBandwidth = i;
+	data->cfg.LoRa.rBandwidth = i;
+	mutex_unlock(&data->mutex);
+	
+out:	
     return count;
 }
 
 static DEVICE_ATTR(bw, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, sx127x_bw_show, sx127x_bw_store);
 
-//static char* crmap[] = { NULL, "4/5", "4/6", "4/7", "4/8" };
+static const char* crmap[] = { NULL, "4/5", "4/6", "4/7", "4/8" };
 
 static ssize_t sx127x_codingrate_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-    int ret = 0;
+	u32 txcoderate = 0;
+	u32 rxcoderate = 0;
+    struct sx127x *data = dev_get_drvdata(dev);
     
-    return ret;
+	txcoderate = data->cfg.LoRa.tCoderate;
+	rxcoderate = data->cfg.LoRa.rCoderate;
+	
+    return sprintf(buf, "txcoderate:%s rxcoderate:%s\n", crmap[txcoderate], crmap[rxcoderate]);
 }
 
-static ssize_t sx127x_codingrate_store(struct device *dev, struct device_attribute *attr,
-             const char *buf, size_t count){
-    //struct sx127x *data = dev_get_drvdata(dev);
+static ssize_t sx127x_codingrate_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    struct sx127x *data = dev_get_drvdata(dev);
+	
+	int idx = sx127x_indexofstring(buf, crmap, ARRAY_SIZE(crmap));
+    if(idx == -1){
+        dev_warn(dev, "invalid codingrate type\n");
+        goto out;
+    }
+	
+	data->cfg.LoRa.tCoderate = idx;
+	data->cfg.LoRa.rCoderate = idx;
+out:	
     return count;
 }
 
@@ -2195,12 +2269,13 @@ static ssize_t sx127x_implicitheadermodeon_show(struct device *dev, struct devic
 int SX127XSetImplicitHeader(struct sx127x *data, unsigned *implicitheader)
 {
     int ret = 0;
-
+	
     return ret;
 }
-static ssize_t sx127x_implicitheadermodeon_store(struct device *dev, struct device_attribute *attr,
-             const char *buf, size_t count){
+static ssize_t sx127x_implicitheadermodeon_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
     //struct sx127x *data = dev_get_drvdata(dev);
+	dev_warn(dev , "not support\n");
     return count;
 }
 
