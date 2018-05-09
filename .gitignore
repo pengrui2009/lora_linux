@@ -8,4 +8,9 @@ tags
 *.ko
 *.mod.c
 modules.order
-
+test_cad
+test_read
+test_write
+test_ioctl
+test_readrssi
+test_open

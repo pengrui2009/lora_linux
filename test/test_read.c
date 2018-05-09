@@ -7,7 +7,7 @@
 #include <unistd.h>   //sleep  
 #include <poll.h>  
 #include <fcntl.h>  
-#include "drv_lib.h"  
+#include "sx127xlib.h"  
   
   
 static unsigned char buffer[50]; 
@@ -26,7 +26,7 @@ int main(int argc ,char *argv[])
     }  
   
     val = 1;
-    result = ioctl(fd, LORA_IOC_WR_WORK, &val);
+    result = ioctl(fd, SET_RECVDATA, val);
     if (result < 0)  
     {  
         printf("ioctl error\n");  
@@ -41,7 +41,7 @@ int main(int argc ,char *argv[])
                 
 
         result = select(fd +1, &fds, &fds, NULL, &timeout);
-	if(result)
+		if(result)
         {
             result = read(fd, buffer, 50);
             printf("size:%d\n", result);

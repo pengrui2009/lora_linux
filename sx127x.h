@@ -187,7 +187,7 @@ struct sx127x_cfg
     
     RadioState_t             State;
     RadioModems_t            Modem;
-    enum sx127x_pa              pa;
+    enum sx127x_pa           pa;
     RadioFskSettings_t       Fsk;
     //RadioFskPacketHandler_t  FskPacketHandler;
     RadioLoRaSettings_t      LoRa;
@@ -243,8 +243,8 @@ struct sx127x {
     bool open;
     atomic_t opened;
     /* device state */
-    bool loraregmap;
-    enum sx127x_opmode opmode;
+    //bool loraregmap;
+    //enum sx127x_opmode opmode;
     /* tx */
     wait_queue_head_t writewq;
     int transmitted;

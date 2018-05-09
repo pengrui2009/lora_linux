@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "sx127xlib.h"
 
 int main(void)
 {
@@ -16,9 +17,20 @@ int main(void)
         goto ERR_EXIT;
     }
 
-    write(fd, sendbuf, sizeof(sendbuf));
-
-    write(fd, sendbuf, sizeof(sendbuf));
+    result = write(fd, sendbuf, sizeof(sendbuf));
+    if(result < sizeof(sendbuf))
+    {
+        printf("send error\n");
+        goto ERR_EXIT;
+    }
+    //write(fd, sendbuf, sizeof(sendbuf));
+    //if we need receive now ,we must do the following
+    result = ioctl(fd, SET_RECVDATA, 1);
+    if(result < 0)
+    {
+        goto ERR_EXIT;
+    }
+    
 ERR_EXIT:
     close(fd);
     return result;

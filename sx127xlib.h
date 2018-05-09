@@ -46,110 +46,122 @@ enum sx127x_pa {
     SX127X_PA_PABOOST
 };
 
+//SET_MODEM param
+#define MODEM_FSK_M       0
+#define MODEM_LORA_M      1
 
-typedef struct _Tx_Config_st_
-{
-    unsigned int RFFrequency;
-    char Power;
-    unsigned char SignalBw;                   // LORA [0: 7.8 kHz, 1: 10.4 kHz, 2: 15.6 kHz, 3: 20.8 kHz, 4: 31.2 kHz,
-                                        // 5: 41.6 kHz, 6: 62.5 kHz, 7: 125 kHz, 8: 250 kHz, 9: 500 kHz, other: Reserved]  
-    unsigned char SpreadingFactor;            // LORA [6: 64, 7: 128, 8: 256, 9: 512, 10: 1024, 11: 2048, 12: 4096  chips]
-    unsigned char ErrorCoding;                // LORA [1: 4/5, 2: 4/6, 3: 4/7, 4: 4/8]
-    bool CrcOn;                         // [0: OFF, 1: ON]
-    bool ImplicitHeaderOn;              // [0: OFF, 1: ON]
-    bool FreqHopOn;                     // [0: OFF, 1: ON]
-    bool IqInverted;                    // [0: OFF, 1: ON]
-    unsigned char HopPeriod;                  // Hops every frequency hopping period symbols
-    unsigned int TxPacketTimeout;
-    unsigned char PayloadLength;
-}Tx_Config_st, *Tx_Config_st_ptr;
+//SET FREQ
+#define SX1278_MIN_FREQ     137000000
+#define SX1278_MAX_FREQ     525000000
 
-typedef struct _Rx_Config_st_
-{
-    unsigned int RFFrequency;
-    unsigned char SignalBw;                   // LORA [0: 7.8 kHz, 1: 10.4 kHz, 2: 15.6 kHz, 3: 20.8 kHz, 4: 31.2 kHz,
-                                        // 5: 41.6 kHz, 6: 62.5 kHz, 7: 125 kHz, 8: 250 kHz, 9: 500 kHz, other: Reserved]  
-    unsigned char SpreadingFactor;            // LORA [6: 64, 7: 128, 8: 256, 9: 512, 10: 1024, 11: 2048, 12: 4096  chips]
-    unsigned char ErrorCoding;                // LORA [1: 4/5, 2: 4/6, 3: 4/7, 4: 4/8]
-    bool CrcOn;                         // [0: OFF, 1: ON]
-//    bool ImplicitHeaderOn;              // [0: OFF, 1: ON]
-//    bool RxSingleOn;                    // [0: Continuous, 1 Single]
-    bool FreqHopOn;                     // [0: OFF, 1: ON]
-    bool IqInverted;                    // [0: OFF, 1: ON]
-    unsigned char HopPeriod;                  // Hops every frequency hopping period symbols
-//    unsigned int RxPacketTimeout;
-    unsigned char PayloadLength;
-}Rx_Config_st, *Rx_Config_st_ptr;
+//SET_BW
+#define BW_78KHZ             0//78kHz
+#define BW_10_4KHZ           1//10.4kHz
+#define BW_15_6KHZ           2//15.6kHz
+#define BW_20_8KHZ           3//20.8kHz
+#define BW_31_25KHZ          4//31.25kHz
+#define BW_41_7KHZ           5//41.7kHz
+#define BW_62_5KHZ           6//62.5kHz
+#define BW_125KHZ            7//125kHz
+#define BW_250KHZ            8//250kHz
+#define BW_500KHZ            9//500kHz
+//notice when freq <= 169Mhz, bw is not support 250kHz and 500kHz
 
-typedef struct _Rx_Signal_Param_st_
-{
-    char snr;
+//SET SPREAD FACTOR
+#define SF_64_CHIPS_SYMBOL      6
+#define SF_128_CHIPS_SYMBOL     7
+#define SF_256_CHIPS_SYMBOL     8
+#define SF_512_CHIPS_SYMBOL     9
+#define SF_1024_CHIPS_SYMBOL    10
+#define SF_2048_CHIPS_SYMBOL    11
+#define SF_4096_CHIPS_SYMBOL    12
 
-    short rssi;
-}Rx_Signal_Param_st, *Rx_Signal_Param_st_ptr;
+//SET CODE RATE
+#define CR_4_5                  1
+#define CR_4_6                  2
+#define CR_4_7                  3
+#define CR_4_8                  4
 
+//SET PA OUTPUT
+#define PA_RFO                  0
+#define PA_BOOST                1
 
+//SET POWER
+//when pa is RFO then min power -1 , max power 14
+//when pa is BOOST then min power 2 , max power 20
 
-/* Read or Write modulation */
-#define LORA_IOC_RD_MODEM               _IOR(SX127X_IOC_MAGIC, 1, uint8_t)
-#define LORA_IOC_WR_MODEM               _IOW(SX127X_IOC_MAGIC, 1, uint8_t)
+//SET_FDEV
+//not support now
 
-/* Read / Write Tx carrie frequency */
-#define LORA_IOC_RD_TXFRE               _IOR(SX127X_IOC_MAGIC, 2, uint32_t)
-#define LORA_IOC_WR_TXFRE               _IOW(SX127X_IOC_MAGIC, 2, uint32_t)
+//SET_PREAMBLELEN
 
-/* Read / Write Rx carrie frequency */
-#define LORA_IOC_RD_RXFRE               _IOR(SX127X_IOC_MAGIC, 3, uint32_t)
-#define LORA_IOC_WR_RXFRE               _IOW(SX127X_IOC_MAGIC, 3, uint32_t)
+//SET_OPMODE
+#define OPMODE_SLEEP            0
+#define OPMODE_STANDBY          1
+#define OPMODE_FSTX             2
+#define OPMODE_TX               3
+#define OPMODE_FSRX             4
+#define OPMODE_RX               5
+#define OPMODE_RXCONTINUOS      5
+#define OPMODE_RXSINGLE         6
+#define OPMODE_CAD              7
 
-/* Read / Write Tx bandwidth */
-#define LORA_IOC_RD_TXBW                _IOR(SX127X_IOC_MAGIC, 4, uint32_t)
-#define LORA_IOC_WR_TXBW                _IOW(SX127X_IOC_MAGIC, 4, uint32_t)
+//START WORK
+//start work
 
-/* Read / Write Rx bandwidth */
-#define LORA_IOC_RD_RXBW                _IOR(SX127X_IOC_MAGIC, 5, uint32_t)
-#define LORA_IOC_WR_RXBW                _IOW(SX127X_IOC_MAGIC, 5, uint32_t)
+//START CAD
+//start cad
 
-/* Read / Write Tx Spread Factor */
-#define LORA_IOC_RD_TXSF                _IOR(SX127X_IOC_MAGIC, 6, uint32_t)
-#define LORA_IOC_WR_TXSF                _IOW(SX127X_IOC_MAGIC, 6, uint32_t)
+/* Write modulation */
+#define SET_MODEM                       _IO(SX127X_IOC_MAGIC, 1)
 
-/* Read / Write Rx Spread Factor*/
-#define LORA_IOC_RD_RXSF                _IOR(SX127X_IOC_MAGIC, 7, uint32_t)
-#define LORA_IOC_WR_RXSF                _IOW(SX127X_IOC_MAGIC, 7, uint32_t)
+/* Write Tx carrie frequency */
+#define SET_TXFREQ                      _IO(SX127X_IOC_MAGIC, 2)
 
-/* Read / Write Tx CodeRate*/
-#define LORA_IOC_RD_TXCR                _IOR(SX127X_IOC_MAGIC, 8, uint8_t)
-#define LORA_IOC_WR_TXCR                _IOW(SX127X_IOC_MAGIC, 8, uint8_t)
+/* Write Rx carrie frequency */
+#define SET_RXFREQ                      _IO(SX127X_IOC_MAGIC, 3)
 
-/* Read / Write Rx CodeRate*/
-#define LORA_IOC_RD_RXCR                _IOR(SX127X_IOC_MAGIC, 9, uint8_t)
-#define LORA_IOC_WR_RXCR                _IOW(SX127X_IOC_MAGIC, 9, uint8_t)
+/* Write Tx bandwidth */
+#define SET_TXBW                        _IO(SX127X_IOC_MAGIC, 4)
 
+/* Write Rx bandwidth */
+#define SET_RXBW                        _IO(SX127X_IOC_MAGIC, 5)
 
-/* Read / Write spreading factoe */
-#define LORA_IOC_RD_POWER               _IOR(SX127X_IOC_MAGIC, 10, int8_t)
-#define LORA_IOC_WR_POWER               _IOW(SX127X_IOC_MAGIC, 10, int8_t)
+/*  Write Tx Spread Factor */
+#define SET_TXSF                        _IO(SX127X_IOC_MAGIC, 6)
+
+/* Write Rx Spread Factor*/
+#define SET_RXSF                        _IO(SX127X_IOC_MAGIC, 7)
+
+/* Write Tx CodeRate*/
+#define SET_TXCR                        _IO(SX127X_IOC_MAGIC, 8)
+
+/* Write Rx CodeRate*/
+#define SET_RXCR                        _IO(SX127X_IOC_MAGIC, 9)
+
+/* Write PA OUTPUT */
+#define SET_PAOUTPUT                    _IO(SX127X_IOC_MAGIC, 10)
+
+/* Write TX POWER */
+#define SET_TXPOWER                     _IO(SX127X_IOC_MAGIC, 11)
 
 //FSK mode ioctl cmd
-#define LORA_IOC_RD_FDEV                _IOR(SX127X_IOC_MAGIC, 11, uint32_t)
-#define LORA_IOC_WR_FDEV                _IOW(SX127X_IOC_MAGIC, 11, uint32_t)
+#define SET_FDEV                        _IO(SX127X_IOC_MAGIC, 12)
 
-#define LORA_IOC_RD_PREAMBLELEN         _IOR(SX127X_IOC_MAGIC, 12, uint16_t)
-#define LORA_IOC_WR_PREAMBLELEN         _IOW(SX127X_IOC_MAGIC, 12, uint16_t)
+//write preamble len
+#define SET_PREAMBLELEN                 _IO(SX127X_IOC_MAGIC, 13)
 
-/* Read / Write operation mode */
-#define LORA_IOC_RD_PAOUTPUT            _IOR(SX127X_IOC_MAGIC, 13, uint8_t)
-#define LORA_IOC_WR_PAOUTPUT            _IOW(SX127X_IOC_MAGIC, 13, uint8_t)
+/* Write sync word*/
+#define SET_OPMODE                      _IO(SX127X_IOC_MAGIC, 14)
 
-/* Read / Write sync word*/
-#define LORA_IOC_RD_OPMODE              _IOR(SX127X_IOC_MAGIC, 14, uint8_t)
-#define LORA_IOC_WR_OPMODE              _IOW(SX127X_IOC_MAGIC, 14, uint8_t)
+/* WRITE tx timeout uint:ms*/
+#define SET_TXTIMEOUT                   _IO(SX127X_IOC_MAGIC, 15)
 
-#define LORA_IOC_WR_WORK                _IOWR(SX127X_IOC_MAGIC, 15, uint8_t)
-//bit[16-24] : snr
-//bit[8-16] : rssi
-//bit[0] : {0:nothing detected  1: detected}
-#define LORA_IOC_WR_CAD                 _IOW(SX127X_IOC_MAGIC, 16, uint8_t)
+//START WORK
+#define SET_RECVDATA                    _IO(SX127X_IOC_MAGIC, 16)
 
+//arg {bit[0] : [0:nothing detected  1: detected] }
+#define START_CAD                       _IO(SX127X_IOC_MAGIC, 17)
+
+#define START_RSSI						_IO(SX127X_IOC_MAGIC, 18)
 #endif
