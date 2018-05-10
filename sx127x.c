@@ -3186,4 +3186,6 @@ static void __exit drv_exit(void)
 }
 module_exit(drv_exit);
 
+MODULE_AUTHOR("pengrui,pengrui_2009@163.com");
+MODULE_DESCRIPTION("the driver of sx127x lora module");
 MODULE_LICENSE("GPL");

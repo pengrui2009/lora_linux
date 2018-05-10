@@ -13,7 +13,7 @@ all:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 	#cp lora.ko $(INSTALLDIR)
 	cd test&&arm-linux-gnueabihf-gcc -o test_open test_open.c -I../
-	cd test&&arm-linux-gnueabihf-gcc -o test_read test_read.c -I../
+	cd test&&arm-linux-gnueabihf-gcc -o test_read test_read.c -I./
 	cd test&&arm-linux-gnueabihf-gcc -o test_write test_write.c -I../
 	cd test&&arm-linux-gnueabihf-gcc -o test_ioctl test_ioctl.c -I../
 	cd test&&arm-linux-gnueabihf-gcc -o test_cad test_cad.c -I../

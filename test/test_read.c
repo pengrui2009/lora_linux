@@ -9,14 +9,17 @@
 #include <fcntl.h>  
 #include "sx127xlib.h"  
   
-  
-static unsigned char buffer[50]; 
+
+static unsigned char buffer[50];
+
+
 int main(int argc ,char *argv[])  
 {  
     int fd;  
     int flag; 
     int result = 0; 
     unsigned char val = 0;
+	struct sx127x_pkt *pkt_ptr = NULL;
     fd_set fds;
   
     fd = open("/dev/lora0",O_RDWR);  
@@ -34,7 +37,8 @@ int main(int argc ,char *argv[])
 
     while(1)  
     {
-        int i = 0; 
+        int i = 0;
+		int len = 0;
         struct timeval timeout = {3, 0};
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
@@ -44,17 +48,21 @@ int main(int argc ,char *argv[])
 		if(result)
         {
             result = read(fd, buffer, 50);
-            printf("size:%d\n", result);
-            if(result < 0)
+            if(result < sizeof(struct sx127x_pkt))
+			{
+				printf("recv data error\n");
                 return 0;
-            for(i=0; i<result;i++)
-            {
-                printf("0x%02x ", buffer[i]);
-                if((i+1)%8 == 0)
-                    printf("\n");
-            }
-            buffer[result] = 0;
-            printf("%s\n", buffer);
+			}
+			
+			len = result;
+			while(len)
+			{
+				pkt_ptr = (struct sx127x_pkt *)buffer;
+				len -= pkt_ptr->len;
+				
+				printf("pkt header len:%d pkt data len:%d\n", pkt_ptr->hdrlen, pkt_ptr->payloadlen);
+				printf("recv data[0]:0x%02x\n", buffer[pkt_ptr->hdrlen]);
+			}
         }
     }  
     return 0;  

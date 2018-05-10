@@ -46,6 +46,17 @@ enum sx127x_pa {
     SX127X_PA_PABOOST
 };
 
+struct sx127x_pkt {
+    size_t len;
+    size_t hdrlen;
+    size_t payloadlen;
+
+    short snr;
+    short rssi;
+    unsigned int fei;
+    unsigned char crcfail;
+} __attribute__ ((packed));
+
 //SET_MODEM param
 #define MODEM_FSK_M       0
 #define MODEM_LORA_M      1
